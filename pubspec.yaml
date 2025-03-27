@@ -51,6 +51,7 @@ dependencies:
   geocoding: ^3.0.0
   permission_handler: ^11.0.1
   flutter_dotenv: ^5.2.1
+  dio: ^5.8.0+1
 
 
 dev_dependencies:
@@ -85,7 +86,7 @@ flutter:
 flutter_icons:
   android: true
   ios: true
-  image_path: "images/jaddie.png"
+  image_path: "images/icon.png"
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

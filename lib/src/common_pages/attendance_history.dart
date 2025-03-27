@@ -106,7 +106,9 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
               CustomTitleText10(text: 'Status'),
               textfield(data: attendance.status),
               CustomTitleText10(text: 'Time'),
-              textfield(data: "${formatTime(attendance.checkIn)} to ${formatTime(attendance.checkOut)}"),
+              textfield(
+                  data:
+                      "${formatTime(attendance.checkIn)} to ${formatTime(attendance.checkOut)}"),
               CustomTitleText10(text: 'Work Type'),
               textfield(data: attendance.workType),
               if (attendance.location != null) ...[
@@ -117,6 +119,7 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
                 CustomTitleText10(text: 'Image Proof'),
                 GestureDetector(
                   onTap: () {
+                    print("Image URL: ${attendance.image}");
                     // Show full image in another dialog
                     showDialog(
                       context: context,
@@ -127,8 +130,16 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
                             InteractiveViewer(
                               child: Image.network(
                                 attendance.image!,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    Text('Image not available'),
+                                errorBuilder: (context, error, stackTrace) {
+                                  debugPrint("Error loading image: $error");
+                                  return Center(
+                                    child: Icon(
+                                      Icons.image_not_supported,
+                                      size: 50,
+                                      color: Colors.grey,
+                                    ),
+                                  );
+                                },
                                 fit: BoxFit.contain,
                               ),
                             ),
@@ -148,14 +159,21 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        attendance.image!,
-                        errorBuilder: (context, error, stackTrace) =>
-                            Text('Image not available'),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          attendance.image!,
+                          errorBuilder: (context, error, stackTrace) {
+                            debugPrint("Error loading image: $error");
+                            return Center(
+                              child: Icon(
+                                Icons.image_not_supported,
+                                size: 50,
+                                color: Colors.grey,
+                              ),
+                            );
+                          },
+                          fit: BoxFit.cover,
+                        )),
                   ),
                 ),
               ]
@@ -176,7 +194,36 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
         } else if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
         } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Center(child: Text('No attendance records found.'));
+          // Improved empty state design
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.calendar_today_outlined,
+                  size: 80,
+                  color: Colors.grey.shade400,
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'No Attendance Records',
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Your attendance history will appear here',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade500,
+                  ),
+                ),
+              ],
+            ),
+          );
         }
 
         final attendanceList = snapshot.data!;
@@ -195,7 +242,6 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
               onTap: () => showAttendanceDetailsDialog(context, attendance),
               child: Container(
                 padding: const EdgeInsets.all(10),
-                
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -205,7 +251,8 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
                         CustomTitleText10(text: attendance.workType),
                         const SizedBox(height: 5),
                         CustomTitleText20(
-                          text: "${formatTime(attendance.checkIn)} to ${formatTime(attendance.checkOut)}",
+                          text:
+                              "${formatTime(attendance.checkIn)} to ${formatTime(attendance.checkOut)}",
                         ),
                       ],
                     ),

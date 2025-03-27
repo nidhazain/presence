@@ -38,11 +38,14 @@ class HomePageState extends State<HomePage> {
     _fetchShiftData();
     _fetchShiftColleagues();
 
-    Future.delayed(const Duration(milliseconds: 500), () {
-      setState(() {
-        attendancePercentage = 70;
-      });
+  Future.delayed(const Duration(milliseconds: 500), () {
+  if (mounted) {
+    setState(() {
+      attendancePercentage = 70;
     });
+  }
+});
+
     dashboardData =
         DashboardService.fetchDashboardData() as Future<DashboardData>;
   }
@@ -61,50 +64,56 @@ class HomePageState extends State<HomePage> {
   }
 
   // Fetch today's shift data
-  Future<void> _fetchShiftData() async {
-    try {
-      final List<dynamic> data = await ShiftService.fetchShiftData();
-      final Map<String, dynamic> shiftData =
-          data.isNotEmpty ? Map<String, dynamic>.from(data[0]) : {};
+ Future<void> _fetchShiftData() async {
+  try {
+    final List<dynamic> data = await ShiftService.fetchShiftData();
+    final Map<String, dynamic> shiftData =
+        data.isNotEmpty ? Map<String, dynamic>.from(data[0]) : {};
 
-     setState(() {
-  shiftTitle = shiftData['shift_type'] ?? 'No Shift Assigned';
+    if (mounted) {
+      setState(() {
+        shiftTitle = shiftData['shift_type'] ?? 'No Shift Assigned';
+        final dateStr = shiftData['date'] ?? '';
+        DateTime? parsedDate = DateTime.tryParse(dateStr);
 
-  final dateStr = shiftData['date'] ?? '';
-  DateTime? parsedDate = DateTime.tryParse(dateStr);
-
-  if (parsedDate != null) {
-    shiftSubtitle = DateFormat('MMM d, yyyy').format(parsedDate);
-  } else if (dateStr.isEmpty) {
-    // No date from API? Show today’s date.
-    shiftSubtitle = DateFormat('MMM d, yyyy').format(DateTime.now());
-  } else {
-    // If backend sends junk, fallback to showing whatever was there
-    shiftSubtitle = dateStr;
-  }
-});
-
-    } catch (e) {
-      debugPrint('Error fetching shift data: $e');
+        if (parsedDate != null) {
+          shiftSubtitle = DateFormat('MMM d, yyyy').format(parsedDate);
+        } else if (dateStr.isEmpty) {
+          // No date from API? Show today’s date.
+          shiftSubtitle = DateFormat('MMM d, yyyy').format(DateTime.now());
+        } else {
+          // If backend sends junk, fallback to showing whatever was there
+          shiftSubtitle = dateStr;
+        }
+      });
+    }
+  } catch (e) {
+    debugPrint('Error fetching shift data: $e');
+    if (mounted) {
       setState(() {
         shiftTitle = 'Error Loading Shift';
       });
     }
   }
+}
+
 
 
 
   // Fetch colleagues assigned to the same shift
-  Future<void> _fetchShiftColleagues() async {
-    try {
-      final colleagues = await ShiftService.fetchShiftColleagues();
+Future<void> _fetchShiftColleagues() async {
+  try {
+    final colleagues = await ShiftService.fetchShiftColleagues();
+    if (mounted) {
       setState(() {
         shiftColleagues = colleagues;
       });
-    } catch (e) {
-      debugPrint('Error fetching shift colleagues: $e');
     }
+  } catch (e) {
+    debugPrint('Error fetching shift colleagues: $e');
   }
+}
+
 
   void _initializeGreeting() {
     DateTime now = DateTime.now();

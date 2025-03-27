@@ -6,6 +6,7 @@ import 'package:presence/src/features/modules/employee/home.dart';
 
 class DashboardService {
   static Future<DashboardData> fetchDashboardData() async {
+    print('api called');
     await TokenService.ensureAccessToken();
     final token = await TokenService.getAccessToken();
     final response = await http.get(
@@ -15,7 +16,7 @@ class DashboardService {
         'Content-Type': 'application/json',
       },
     ); 
-
+print('api called ${response.body}');
     if (response.statusCode == 200) {
       return DashboardData.fromJson(jsonDecode(response.body));
     } else {

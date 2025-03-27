@@ -27,7 +27,7 @@ class _RequestAttendanceDialogState extends State<RequestAttendanceDialog> {
   String _selectedProofType = 'Location';
   File? _imageFile;
   bool _isImageCaptured = false;
-  String? _selectedWorkType = "Work from Home";
+  String? _selectedWorkType;
 
   final DateFormat _backendDateFormat = DateFormat('yyyy-MM-dd');
   final DateFormat _displayDateFormat = DateFormat('dd MMM yyyy');
@@ -313,50 +313,59 @@ class _RequestAttendanceDialogState extends State<RequestAttendanceDialog> {
     );
   }
 
-  void _clearForm() {
-    setState(() {
-      final DateTime now = DateTime.now();
-      dateController.text = _displayDateFormat.format(now);
-      
-      checkInController.clear();
-      checkOutController.clear();
-      workTypeController.clear();
-      locationController.clear();
-      _imageFile = null;
-      _isImageCaptured = false;
-      _selectedProofType = 'Location';
-      _selectedWorkType = null;
-    });
-    _formKey.currentState?.reset();
-  }
+void _clearForm() {
+  setState(() {
+    final DateTime now = DateTime.now();
+    dateController.text = _displayDateFormat.format(now);
+    
+    checkInController.clear();
+    checkOutController.clear();
+    workTypeController.clear();
+    locationController.clear();
+    _imageFile = null;
+    _isImageCaptured = false;
+    _selectedProofType = 'Location';
+    _selectedWorkType = "Work from Home"; 
+  });
+  //_formKey.currentState?.reset();
+}
+
 
   Widget _buildWorkField() {
     return DropdownButtonFormField<String>(
-      validator: ValidationHelper.validateField,
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: primary.withOpacity(.05),
-        contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-        border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none),
-        hintText: 'type of work',
-      ),
-      items: [
-        DropdownMenuItem(
-            value: "Work from Home", child: Text("Work from Home")),
-        DropdownMenuItem(value: "Field Work", child: Text("Field Work")),
-      ],
-      value: _selectedWorkType,
-      onChanged: (String? newValue) {
-        if (newValue != null) {
-          setState(() {
-            _selectedWorkType = newValue;
-            workTypeController.text = newValue;
-          });
-        }
-      },
-    );
+  value: _selectedWorkType,
+  validator: ValidationHelper.validateField,
+  decoration: InputDecoration(
+    filled: true,
+    fillColor: primary.withOpacity(.05),
+    contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide.none,
+    ),
+    hintText: 'Type of work',
+  ),
+  items: [
+    DropdownMenuItem(
+      value: "Work from Home",
+      child: Text("Work from Home"),
+    ),
+    DropdownMenuItem(
+      value: "Field Work",
+      child: Text("Field Work"),
+    ),
+  ],
+  onChanged: (String? newValue) {
+    if (newValue != null) {
+      setState(() {
+        _selectedWorkType = newValue;
+        workTypeController.text = newValue;
+      });
+    }
+  },
+);
+
+
   }
 
   Widget _buildImagePreview() {

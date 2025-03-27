@@ -8,14 +8,16 @@ class ApiService {
 
   /// User Login
   static Future<Map<String, dynamic>?> login(String email, String password) async {
+    print('Sending login request to: $BASE_URL/login/');
     try {
       final response = await http.post(
-        Uri.parse('$BASE_URL/login/'),
+        Uri.parse('https://presence-plus.onrender.com/login/'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email, 'password': password}),
       );
-
       if (response.statusCode == 200) {
+        print('Response: ${response.statusCode}, Body: ${response.body}');
+
         final Map<String, dynamic> responseBody = jsonDecode(response.body);
         return responseBody;
       } else {

@@ -5,6 +5,7 @@ import 'package:presence/src/common_pages/leave_history.dart';
 import 'package:presence/src/features/api/api.dart';
 import 'package:presence/src/features/api/url.dart';
 import 'package:http/http.dart' as http;
+import 'package:presence/src/models/leave.dart';
 
 class LeaveService {
   //static final _storage = FlutterSecureStorage();
@@ -78,7 +79,20 @@ static Future<List<Leave>> fetchLeaveHistory() async {
   );
 
   if (response.statusCode == 200) {
-    List<dynamic> data = jsonDecode(response.body);
+    final decodedResponse = jsonDecode(response.body);
+    List<dynamic> data;
+
+    if (decodedResponse is List) {
+      // API returned a list directly.
+      data = decodedResponse;
+    } else if (decodedResponse is Map<String, dynamic> && decodedResponse.containsKey('data')) {
+      // API returned a map that contains the data.
+      data = decodedResponse['data'] as List<dynamic>;
+    } else {
+      // If the structure is not recognized, assume an empty list.
+      data = [];
+    }
+
     return data.map((json) => Leave.fromJson(json)).toList();
   } else if (response.statusCode == 401) {
     throw Exception('Unauthorized: Token might be expired or invalid.');
@@ -86,6 +100,7 @@ static Future<List<Leave>> fetchLeaveHistory() async {
     throw Exception('Failed to load leave history: ${response.statusCode}');
   }
 }
+
 
 
 static Future<List<Map<String, dynamic>>> getLeaveTypes(String token) async {

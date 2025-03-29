@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:presence/src/common_widget/submitbutton.dart';
-import 'package:presence/src/common_widget/text_tile.dart';
 import 'package:presence/src/constants/colors.dart';
+import 'package:presence/src/features/api/url.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class Hrshift extends StatefulWidget {
   const Hrshift({super.key});
@@ -15,59 +16,15 @@ class _HrshiftState extends State<Hrshift> {
   CalendarFormat _calendarFormat = CalendarFormat.month;
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedDay = DateTime.now(); // Ensure today's card is visible initially
-  }
-
-  // Shift roster data - would typically come from a database or API
-  final Map<DateTime, Map<String, String>> shiftRoster = {
-    DateTime(2025, 3, 3): {
-      "Alice": "Morning",
-      "John": "Morning",
-      "Bob": "Night",
-      "Charlie": "Intermediate"
-    },
-    DateTime(2025, 3, 4): {
-      "David": "Morning",
-      "Eve": "Intermediate",
-      "Frank": "Night"
-    },
-    DateTime(2025, 3, 5): {
-      "Alice": "Night",
-      "Bob": "Morning",
-      "Charlie": "Intermediate"
-    },
-    DateTime(2025, 3, 6): {
-      "George": "Intermediate",
-      "Helen": "Morning",
-      "Ian": "Night"
-    },
-    DateTime(2025, 3, 7): {
-      "Jack": "Morning",
-      "Karen": "Night",
-      "Leo": "Intermediate"
-    },
-    DateTime(2025, 3, 8): {
-      "Mike": "Morning",
-      "Nina": "Intermediate",
-      "Olivia": "Night"
-    },
-    DateTime(2025, 3, 10): {
-      "Steve": "Morning",
-      "Tina": "Intermediate",
-      "Uma": "Night"
-    },
-    DateTime(2025, 3, 31): {
-      "Steve": "Morning",
-      "Tina": "Intermediate",
-      "Uma": "Night"
-    },
-  };
-
-  // Public holidays - would typically come from a database or API
+  bool _isLoading = false;
+  String _errorMessage = '';
+  
+  // Replace with your actual API base URL
+  
+  // Store fetched shift data
+  Map<DateTime, Map<String, String>> shiftRoster = {};
+  
+  // Store fetched holiday data (you might want to fetch this from another API endpoint)
   final Map<DateTime, List<String>> holidays = {
     DateTime(2025, 1, 26): ['Republic Day'],
     DateTime(2025, 8, 15): ['Independence Day'],
@@ -76,9 +33,61 @@ class _HrshiftState extends State<Hrshift> {
     DateTime(2025, 12, 25): ['Christmas'],
   };
 
+  @override
+  void initState() {
+    super.initState();
+    _selectedDay = DateTime.now();
+    _fetchShiftsForDate(_selectedDay!);
+  }
+
   /// Normalizes date by removing time portion for comparison
   DateTime _normalizeDate(DateTime date) {
     return DateTime(date.year, date.month, date.day);
+  }
+
+  /// Fetches shifts for a specific date from the API
+  Future<void> _fetchShiftsForDate(DateTime date) async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = '';
+    });
+
+    try {
+      final normalizedDate = _normalizeDate(date);
+      final formattedDate = "${normalizedDate.year}-${normalizedDate.month.toString().padLeft(2, '0')}-${normalizedDate.day.toString().padLeft(2, '0')}";
+      
+      final response = await http.get(
+        Uri.parse('$BASE_URL/assignview/?date=$formattedDate'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        
+
+        final Map<String, String> shiftsForDate = {};
+        
+        for (var assignment in data['assignments']) {
+          shiftsForDate[assignment['employee_name']] = assignment['shift_type'];
+        }
+        
+        setState(() {
+          shiftRoster[normalizedDate] = shiftsForDate;
+        });
+      } else {
+        setState(() {
+          _errorMessage = 'Failed to load shifts: ${response.statusCode}';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error fetching shifts: ${e.toString()}';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   /// Gets organized shifts for a specific day
@@ -89,6 +98,7 @@ class _HrshiftState extends State<Hrshift> {
       "Intermediate": [],
       "Night": []
     };
+    
     if (shiftRoster.containsKey(normalizedDate)) {
       shiftRoster[normalizedDate]?.forEach((employee, shift) {
         shifts[shift]?.add(employee);
@@ -118,9 +128,29 @@ class _HrshiftState extends State<Hrshift> {
             SizedBox(height: screenHeight * 0.02),
             _buildCalendar(),
             SizedBox(height: screenHeight * 0.02),
-            if (_selectedDay != null) _buildSelectedDayCard(),
+            if (_isLoading) _buildLoadingIndicator(),
+            if (_errorMessage.isNotEmpty) _buildErrorWidget(),
+            if (_selectedDay != null && !_isLoading && _errorMessage.isEmpty) 
+              _buildSelectedDayCard(),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingIndicator() {
+    return const Padding(
+      padding: EdgeInsets.all(16.0),
+      child: Center(child: CircularProgressIndicator()),
+    );
+  }
+
+  Widget _buildErrorWidget() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Text(
+        _errorMessage,
+        style: const TextStyle(color: Colors.red),
       ),
     );
   }
@@ -140,11 +170,10 @@ class _HrshiftState extends State<Hrshift> {
         return isSameDay(_selectedDay, day);
       },
       onDaySelected: (selectedDay, focusedDay) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          setState(() {
-            _selectedDay = selectedDay;
-            _focusedDay = focusedDay;
-          });
+        setState(() {
+          _selectedDay = selectedDay;
+          _focusedDay = focusedDay;
+          _fetchShiftsForDate(selectedDay);
         });
       },
       calendarStyle: CalendarStyle(
@@ -156,24 +185,19 @@ class _HrshiftState extends State<Hrshift> {
           color: Colors.blueAccent,
           shape: BoxShape.circle,
         ),
-        // Mark holidays in red
         holidayTextStyle: const TextStyle(color: Colors.red),
         holidayDecoration: BoxDecoration(
           shape: BoxShape.circle,
           border: Border.all(color: Colors.red, width: 1.5),
         ),
-        // Custom cell styling based on day properties
         markersMaxCount: 3,
       ),
-      // Custom calendar builders for special date styling
       calendarBuilders: CalendarBuilders(
         defaultBuilder: (context, day, focusedDay) {
-          // Check if day has shifts or is a holiday
           bool hasShifts = _hasShiftRoster(day);
           bool isHoliday = _isHoliday(day);
           
           if (isHoliday) {
-            // Red styling for holidays
             return Container(
               margin: const EdgeInsets.all(4.0),
               alignment: Alignment.center,
@@ -187,33 +211,31 @@ class _HrshiftState extends State<Hrshift> {
               ),
             );
           } else if (hasShifts) {
-            // Blue styling for days with shift roster
             return Container(
               margin: const EdgeInsets.all(4.0),
               alignment: Alignment.center,
-              
               child: Text(
                 day.day.toString(),
                 style: const TextStyle(color: Colors.blueAccent),
               ),
             );
           }
-          return null; // Return null for default styling
+          return null;
         },
         holidayBuilder: (context, day, focusedDay) {
-          // Additional customization for holidays if needed
           return Container(
             margin: const EdgeInsets.all(4.0),
             alignment: Alignment.center,
-            
             child: Text(
               day.day.toString(),
-              style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                color: Colors.red, 
+                fontWeight: FontWeight.bold
+              ),
             ),
           );
         },
       ),
-      // Mark holidays in the calendar
       holidayPredicate: (day) {
         return _isHoliday(day);
       },

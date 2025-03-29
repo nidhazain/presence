@@ -4,7 +4,7 @@ import 'package:presence/src/features/api/api.dart';
 import 'package:presence/src/features/api/url.dart';
 import 'package:presence/src/features/modules/employee/balance.dart';
 
-class BalanceService {// Replace with your backend URL
+class BalanceService {
 
   Future<List<LeaveBalanceModel>> fetchLeaveBalance() async {
     await TokenService.ensureAccessToken();

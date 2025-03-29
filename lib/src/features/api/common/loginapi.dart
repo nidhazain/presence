@@ -11,7 +11,7 @@ class ApiService {
     print('Sending login request to: $BASE_URL/login/');
     try {
       final response = await http.post(
-        Uri.parse('https://presence-plus.onrender.com/login/'),
+        Uri.parse('$BASE_URL/login/'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email, 'password': password}),
       );

@@ -21,7 +21,9 @@ class _ShiftCalendarScreenState extends State<ShiftCalendarScreen> {
   DateTime? _selectedDay;
   Map<String, dynamic>? _selectedDayShiftData;
   List<dynamic> _colleagues = [];
-  bool _isHoliday = false; 
+  bool _isHoliday = false;
+  Map<DateTime, String> _shiftDataMap = {}; // Stores shift types for all dates
+  Map<DateTime, List<dynamic>> _colleaguesMap = {}; // Stores colleagues for all dates
 
   final Map<DateTime, List<String>> holidays = {
     DateTime(2025, 1, 26): ['Republic Day'],
@@ -35,30 +37,70 @@ class _ShiftCalendarScreenState extends State<ShiftCalendarScreen> {
   void initState() {
     super.initState();
     _selectedDay = DateTime.now();
-    _fetchShiftDataForDay(_selectedDay!);
+    _fetchInitialData();
   }
 
   DateTime _normalizeDate(DateTime date) {
     return DateTime(date.year, date.month, date.day);
   }
- 
+
   bool _checkHoliday(DateTime day) {
     return holidays.containsKey(_normalizeDate(day));
   }
 
-  Future<void> _fetchShiftDataForDay(DateTime day) async {
-    String? token = await TokenService.getAccessToken(); 
+  Future<void> _fetchInitialData() async {
+    // 1. Fetch today's shift and colleagues first
+    await _fetchShiftDataForDay(_selectedDay!);
+    
+    // 2. Then fetch shifts for the current month
+    final firstDay = DateTime(_focusedDay.year, _focusedDay.month, 1);
+    final lastDay = DateTime(_focusedDay.year, _focusedDay.month + 1, 0);
+    await _fetchShiftsForRange(firstDay, lastDay);
+  }
 
- 
-    final String formattedDate =
-        "${day.year.toString().padLeft(4, '0')}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}";
+  Future<void> _fetchShiftsForRange(DateTime start, DateTime end) async {
+    String? token = await TokenService.getAccessToken();
+    
+    try {
+      final url = '$BASE_URL/shifts-range/?start_date=${_formatDate(start)}&end_date=${_formatDate(end)}';
+      
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data is List) {
+          setState(() {
+            _shiftDataMap.clear();
+            for (var shift in data) {
+              if (shift['date'] != null && shift['shift_type'] != null) {
+                final date = DateTime.parse(shift['date']);
+                _shiftDataMap[_normalizeDate(date)] = shift['shift_type'];
+              }
+            }
+          });
+        }
+      }
+    } catch (error) {
+      print('Error fetching shift range: $error');
+    }
+  }
+
+  Future<void> _fetchShiftDataForDay(DateTime day) async {
+    String? token = await TokenService.getAccessToken();
+    final String formattedDate = _formatDate(day);
 
     try {
       final String url;
       if (isSameDay(day, DateTime.now())) {
-        url = '$BASE_URL/employee-shifts/'; 
+        url = '$BASE_URL/employee-shifts/';
       } else {
-        url = '$BASE_URL/shift-colleagues/$formattedDate/'; 
+        url = '$BASE_URL/shift-colleagues/$formattedDate/';
       }
 
       final response = await http.get(
@@ -75,6 +117,13 @@ class _ShiftCalendarScreenState extends State<ShiftCalendarScreen> {
           _selectedDayShiftData = (data is List && data.isNotEmpty) ? data.first : null;
           _colleagues = data;
           _isHoliday = _checkHoliday(day);
+          
+          // Update maps
+          final normalizedDate = _normalizeDate(day);
+          if (_selectedDayShiftData != null && _selectedDayShiftData!['shift_type'] != null) {
+            _shiftDataMap[normalizedDate] = _selectedDayShiftData!['shift_type'];
+            _colleaguesMap[normalizedDate] = _colleagues;
+          }
         });
       } else {
         setState(() {
@@ -92,14 +141,18 @@ class _ShiftCalendarScreenState extends State<ShiftCalendarScreen> {
     }
   }
 
+  String _formatDate(DateTime date) {
+    return "${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+  }
+
   Color _getShiftColor(String? shift) {
     switch (shift) {
-      case 'morning'&& 'Morning':
+      case 'Morning':
         return const Color.fromARGB(255, 54, 144, 240);
       case 'Night':
         return const Color.fromARGB(255, 167, 69, 243);
       case 'Intermediate':
-        return const Color.fromARGB(255, 55, 169, 59);
+        return const Color.fromARGB(255, 67, 107, 86);
       default:
         return primary;
     }
@@ -116,7 +169,7 @@ class _ShiftCalendarScreenState extends State<ShiftCalendarScreen> {
             SizedBox(height: screenHeight * 0.02),
             _buildCalendar(),
             SizedBox(height: screenHeight * 0.02),
-            if (_selectedDay != null) _buildSelectedDayCard(),
+            _buildSelectedDayCard(),
           ],
         ),
       ),
@@ -134,13 +187,31 @@ class _ShiftCalendarScreenState extends State<ShiftCalendarScreen> {
           _calendarFormat = format;
         });
       },
+      onPageChanged: (focusedDay) {
+        // When month changes, fetch data for the new month
+        setState(() {
+          _focusedDay = focusedDay;
+        });
+        final firstDay = DateTime(focusedDay.year, focusedDay.month, 1);
+        final lastDay = DateTime(focusedDay.year, focusedDay.month + 1, 0);
+        _fetchShiftsForRange(firstDay, lastDay);
+      },
       selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
       onDaySelected: (selectedDay, focusedDay) {
         setState(() {
           _selectedDay = selectedDay;
           _focusedDay = focusedDay;
         });
-        _fetchShiftDataForDay(selectedDay);
+        // Check if we already have colleagues data for this date
+        if (_colleaguesMap.containsKey(_normalizeDate(selectedDay))) {
+          setState(() {
+            _colleagues = _colleaguesMap[_normalizeDate(selectedDay)]!;
+            _selectedDayShiftData = _colleagues.isNotEmpty ? _colleagues.first : null;
+            _isHoliday = _checkHoliday(selectedDay);
+          });
+        } else {
+          _fetchShiftDataForDay(selectedDay);
+        }
       },
       calendarStyle: CalendarStyle(
         todayDecoration: BoxDecoration(
@@ -152,18 +223,13 @@ class _ShiftCalendarScreenState extends State<ShiftCalendarScreen> {
           shape: BoxShape.circle,
         ),
         holidayTextStyle: const TextStyle(color: Colors.red),
-        markerDecoration: BoxDecoration(
-          color: primary,
-          shape: BoxShape.circle,
-        ),
       ),
       calendarBuilders: CalendarBuilders(
         defaultBuilder: (context, date, _) {
-          bool isHoliday = _checkHoliday(date);
-          String? shift;
-          if (isSameDay(date, _selectedDay) && _selectedDayShiftData != null) {
-            shift = _selectedDayShiftData!['shift_type'];
-          }
+          final normalizedDate = _normalizeDate(date);
+          final isHoliday = _checkHoliday(date);
+          final shift = _shiftDataMap[normalizedDate];
+          
           return Container(
             margin: const EdgeInsets.all(4.0),
             alignment: Alignment.center,
@@ -190,15 +256,20 @@ class _ShiftCalendarScreenState extends State<ShiftCalendarScreen> {
           );
         },
         todayBuilder: (context, date, _) {
-          bool isHoliday = _checkHoliday(date);
+          final normalizedDate = _normalizeDate(date);
+          final isHoliday = _checkHoliday(date);
+          final shift = _shiftDataMap[normalizedDate];
+          
           return Container(
             margin: const EdgeInsets.all(4.0),
             alignment: Alignment.center,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: isHoliday ? Colors.red.withOpacity(0.2) : primary.withOpacity(0.7),
+              color: isHoliday
+                  ? Colors.red.withOpacity(0.2)
+                  : (shift != null ? _getShiftColor(shift).withOpacity(0.7) : primary.withOpacity(0.7)),
               border: Border.all(
-                color: isHoliday ? Colors.red : primary,
+                color: isHoliday ? Colors.red : (shift != null ? _getShiftColor(shift) : primary),
                 width: 1.5,
               ),
             ),
@@ -212,7 +283,10 @@ class _ShiftCalendarScreenState extends State<ShiftCalendarScreen> {
           );
         },
         selectedBuilder: (context, date, _) {
-          bool isHoliday = _checkHoliday(date);
+          final normalizedDate = _normalizeDate(date);
+          final isHoliday = _checkHoliday(date);
+          final shift = _shiftDataMap[normalizedDate];
+          
           return Container(
             margin: const EdgeInsets.all(4.0),
             alignment: Alignment.center,
@@ -235,25 +309,26 @@ class _ShiftCalendarScreenState extends State<ShiftCalendarScreen> {
   }
 
   Widget _buildSelectedDayCard() {
-    final String currentShift = _selectedDayShiftData?['shift_type']?.toString() ?? 'No Shift';
+    // Get data from both sources
+    final normalizedDate = _normalizeDate(_selectedDay!);
+    final String currentShift = _selectedDayShiftData?['shift_type']?.toString() ?? 
+                              _shiftDataMap[normalizedDate] ?? 
+                              'No Shift';
     final bool isToday = isSameDay(_selectedDay!, DateTime.now());
+    final List<dynamic> colleaguesToShow = _colleagues.isNotEmpty 
+        ? _colleagues 
+        : _colleaguesMap[normalizedDate] ?? [];
 
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Card.outlined(
         shape: RoundedRectangleBorder(
           side: BorderSide(
-              color: _isHoliday
-                  ? Colors.red
-                  // ignore: unnecessary_null_comparison
-                  : (currentShift != null ? _getShiftColor(currentShift) : Colors.blue),
+              color: _isHoliday ? Colors.red : _getShiftColor(currentShift),
               width: 1.5),
           borderRadius: BorderRadius.circular(10),
         ),
-        color: (_isHoliday
-                ? Colors.red
-                // ignore: unnecessary_null_comparison
-                : (currentShift != null ? _getShiftColor(currentShift) : blue))
+        color: (_isHoliday ? Colors.red : _getShiftColor(currentShift))
             .withOpacity(.1),
         child: Padding(
           padding: const EdgeInsets.all(12.0),
@@ -265,16 +340,20 @@ class _ShiftCalendarScreenState extends State<ShiftCalendarScreen> {
                   isToday
                       ? "Today's Shift: $currentShift"
                       : "$currentShift shift",
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 subtitle: Text(
-                  isToday ? "Today" : _selectedDay!.toLocal().toString().split(' ')[0],
+                  isToday
+                      ? "Today"
+                      : _selectedDay!.toLocal().toString().split(' ')[0],
                   style: const TextStyle(fontSize: 14),
                 ),
               ),
               if (_isHoliday)
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0, vertical: 8.0),
                   child: Container(
                     padding: const EdgeInsets.all(8.0),
                     decoration: BoxDecoration(
@@ -288,7 +367,7 @@ class _ShiftCalendarScreenState extends State<ShiftCalendarScreen> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            "Holiday: ${holidays[_normalizeDate(_selectedDay!)]?.join(', ') ?? ''}",
+                            "Holiday: ${holidays[normalizedDate]?.join(', ') ?? ''}",
                             style: const TextStyle(
                               color: Colors.red,
                               fontWeight: FontWeight.bold,
@@ -299,15 +378,17 @@ class _ShiftCalendarScreenState extends State<ShiftCalendarScreen> {
                     ),
                   ),
                 ),
-              if (currentShift != null)
+              if (currentShift != 'No Shift')
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0, vertical: 8.0),
                   child: OutlinedButton.icon(
-                    onPressed: _showColleaguesDialog,
+                    onPressed: () => _showColleaguesDialog(colleaguesToShow, currentShift),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: primary,
                       side: BorderSide(color: _getShiftColor(currentShift)),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
                     ),
                     label: const Text('View Colleagues'),
                   ),
@@ -320,21 +401,22 @@ class _ShiftCalendarScreenState extends State<ShiftCalendarScreen> {
     );
   }
 
-  void _showColleaguesDialog() {
-    final String currentShift = _selectedDayShiftData?['shift_type']?.toString() ?? 'No Shift';
+  void _showColleaguesDialog(List<dynamic> colleagues, String currentShift) {
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: CustomTitleText8(text: "Colleagues in $currentShift shift"),
-          content: _colleagues.isNotEmpty
+          content: colleagues.isNotEmpty
               ? Column(
                   mainAxisSize: MainAxisSize.min,
-                  children: _colleagues.map((colleague) {
-                    final String name = colleague['employee_name']?.toString() ?? 'Unknown';
+                  children: colleagues.map((colleague) {
+                    final String name =
+                        colleague['employee_name']?.toString() ?? 'Unknown';
                     return ListTile(
                       leading: CircleAvatar(
-                        backgroundColor: _getShiftColor(currentShift).withOpacity(0.2),
+                        backgroundColor:
+                            _getShiftColor(currentShift).withOpacity(0.2),
                         child: Text(
                           name[0],
                           style: TextStyle(

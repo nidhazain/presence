@@ -166,7 +166,7 @@ class _LeaveHistoryState extends State<LeaveHistory> {
             }
 
             final leaveList = snapshot.data!;
-
+            print('Leave List: $leaveList'); // Print fetched data
             return ListView.separated(
               itemCount: leaveList.length,
               separatorBuilder: (context, index) => Divider(
@@ -178,7 +178,10 @@ class _LeaveHistoryState extends State<LeaveHistory> {
                 final leave = leaveList[index];
 
                 return GestureDetector(
-                  onTap: () => showLeaveDetailsDialog(context, leave),
+                  
+                  onTap: () => 
+                  
+                  showLeaveDetailsDialog(context, leave),
                   child: Container(
                     padding: const EdgeInsets.all(10),
                     child: Row(

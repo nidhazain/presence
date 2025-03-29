@@ -32,7 +32,7 @@ void _showFullSizeImage(BuildContext context, String imageUrl) {
   showDialog(
     context: context,
     builder: (context) => Dialog(
-      insetPadding: EdgeInsets.all(16),
+      insetPadding: const EdgeInsets.all(16),
       child: Stack(
         clipBehavior: Clip.none,
         alignment: Alignment.topRight,
@@ -60,7 +60,7 @@ void _showFullSizeImage(BuildContext context, String imageUrl) {
                   );
                 },
                 errorBuilder: (context, error, stackTrace) => Center(
-                  child: Text('Failed to load image'),
+                  child: const Text('Failed to load image'),
                 ),
               ),
             ),
@@ -72,7 +72,7 @@ void _showFullSizeImage(BuildContext context, String imageUrl) {
               backgroundColor: Colors.black54,
               radius: 16,
               child: IconButton(
-                icon: Icon(Icons.close, size: 16, color: Colors.white),
+                icon: const Icon(Icons.close, size: 16, color: Colors.white),
                 onPressed: () => Navigator.pop(context),
                 padding: EdgeInsets.zero,
               ),
@@ -85,12 +85,11 @@ void _showFullSizeImage(BuildContext context, String imageUrl) {
 }
 
 void showLeaveDetailsDialog(BuildContext context, Leave leave) {
-  // Do the print checks before building the dialog widget
-  if (leave.imageUrl != null && leave.imageUrl!.trim().isNotEmpty) {
-    print("Final Image URL being used: ${leave.imageUrl}");
-  } else {
-    print("No image URL found in leave object!");
-  }
+    debugPrint('Leave object full details: ${leave.toJson()}');
+  debugPrint('Cancellation reason from object: ${leave.cancellationReason}');
+  debugPrint('Cancellation reason is null? ${leave.cancellationReason == null}');
+  debugPrint('Cancellation reason is empty? ${leave.cancellationReason?.isEmpty ?? true}');
+  debugPrint('Leave status: ${leave.status}');
 
   final String leaveDays = _calculateLeaveDays(leave.startDate, leave.endDate);
 
@@ -101,7 +100,7 @@ void showLeaveDetailsDialog(BuildContext context, Leave leave) {
       title: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(leave.type, style: TextStyle(fontWeight: FontWeight.bold)),
+          Text(leave.type, style: const TextStyle(fontWeight: FontWeight.bold)),
           CloseButton(onPressed: () => Navigator.pop(context)),
         ],
       ),
@@ -124,20 +123,33 @@ void showLeaveDetailsDialog(BuildContext context, Leave leave) {
               textfield(data: leaveDays),
               CustomTitleText10(text: "Reason:"),
               textfield(data: leave.reason),
+               // Cancellation reason section - now properly displayed
+              if (leave.cancellationReason != null && leave.cancellationReason!.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CustomTitleText10(text: "Cancellation Reason:"),
+                      textfield(data: leave.cancellationReason!),
+                    ],
+                  ),
+                ),
+              // Image attachment section
               if (leave.imageUrl != null && leave.imageUrl!.isNotEmpty) ...[
                 Padding(
                   padding: const EdgeInsets.only(top: 10),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      const Text(
                         "Attachment:",
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       GestureDetector(
                         onTap: () {
-                          print("Image path (onTap): ${leave.imageUrl}");
+                          debugPrint("Image path: ${leave.imageUrl}");
                           _showFullSizeImage(context, leave.imageUrl!);
                         },
                         child: Container(
@@ -164,24 +176,24 @@ void showLeaveDetailsDialog(BuildContext context, Leave leave) {
                                 );
                               },
                               errorBuilder: (context, error, stackTrace) {
-                                print("Image loading error: $error");
+                                debugPrint("Image error: $error");
                                 return Container(
                                   color: Colors.grey.shade200,
                                   alignment: Alignment.center,
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      Icon(
+                                      const Icon(
                                         Icons.broken_image,
                                         size: 40,
                                         color: Colors.grey,
                                       ),
-                                      SizedBox(height: 8),
-                                      Text('Failed to load image'),
+                                      const SizedBox(height: 8),
+                                      const Text('Failed to load image'),
                                       if (error != null)
                                         Text(
                                           error.toString(),
-                                          style: TextStyle(fontSize: 10),
+                                          style: const TextStyle(fontSize: 10),
                                         ),
                                     ],
                                   ),
@@ -195,11 +207,15 @@ void showLeaveDetailsDialog(BuildContext context, Leave leave) {
                   ),
                 ),
               ],
+              
+             
+              
               const SizedBox(height: 20),
               if (leave.status.toLowerCase() == 'pending')
                 CustomButton(
                   text: "Delete Request",
-                  onPressed: () {},
+                  onPressed: () {
+                  },
                 ),
             ],
           ),
@@ -208,5 +224,3 @@ void showLeaveDetailsDialog(BuildContext context, Leave leave) {
     ),
   );
 }
-
-

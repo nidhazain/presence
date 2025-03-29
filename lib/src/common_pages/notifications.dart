@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:presence/src/common_widget/text_tile.dart';
 import 'package:presence/src/constants/colors.dart';
-
+import 'package:http/http.dart' as http;
+import 'package:presence/src/features/api/api.dart';
+import 'package:presence/src/features/api/url.dart';
+import 'dart:convert';
 
 class Notification {
   final String id;
@@ -16,6 +19,15 @@ class Notification {
     required this.timestamp,
     this.isRead = false,
   });
+
+  factory Notification.fromJson(Map<String, dynamic> json) {
+    return Notification(
+      id: json['id'].toString(),
+      message: json['message'] ?? 'No message',
+      timestamp: DateTime.parse(json['time_stamp']),
+      isRead: json['is_read'] ?? false,
+    );
+  }
 }
 
 class NotificationPage extends StatefulWidget {
@@ -26,44 +38,84 @@ class NotificationPage extends StatefulWidget {
 }
 
 class _NotificationPageState extends State<NotificationPage> {
-  // Dummy data
-  final List<Notification> _allNotifications = [
-    Notification(
-      id: '1',
-      message: 'John Doe has requested leave from April 10-15, 2025.',
-      timestamp: DateTime.now().subtract(const Duration(minutes: 30)),
-    ),
-    Notification(
-      id: '2',
-      message: 'Sarah Williams will be 30 minutes late today due to traffic.',
-      timestamp: DateTime.now().subtract(const Duration(hours: 3)),
-    ),
-    Notification(
-      id: '3',
-      message: 'Remote work policy has been updated. Please review the changes.',
-      timestamp: DateTime.now().subtract(const Duration(hours: 8)),
-    ),
-    Notification(
-      id: '4',
-      message: 'Your leave request for March 26-28 has been approved.',
-      timestamp: DateTime.now().subtract(const Duration(days: 1)),
-    ),
-    Notification(
-      id: '5',
-      message: 'Michael Brown\'s leave request has been rejected due to staff shortage.',
-      timestamp: DateTime.now().subtract(const Duration(days: 2)),
-    ),
-    Notification(
-      id: '6',
-      message: 'Robert Johnson will be late by 45 minutes due to a doctor\'s appointment.',
-      timestamp: DateTime.now().subtract(const Duration(days: 4)),
-    ),
-    Notification(
-      id: '7',
-      message: 'New dress code policy has been implemented effective April 1, 2025.',
-      timestamp: DateTime.now().subtract(const Duration(days: 6)),
-    ),
-  ];
+  List<Notification> _allNotifications = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchNotifications();
+  }
+
+  Future<void> _fetchNotifications() async {
+    try {
+
+await TokenService.ensureAccessToken();
+      final token = TokenService.getAccessToken();
+      if (token == null) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Authentication required';
+        });
+        return;
+      }
+
+      final response = await http.get(
+        Uri.parse('$BASE_URL/leavenotification/'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        setState(() {
+          _allNotifications = data
+              .map((json) => Notification.fromJson(json))
+              .toList();
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Failed to load notifications: ${response.statusCode}';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Error fetching notifications: $e';
+      });
+    }
+  }
+
+  Future<void> _markAsRead(String notificationId) async {
+    try {
+      await TokenService.ensureAccessToken();
+      final token = TokenService.getAccessToken();
+
+      final response = await http.patch(
+        Uri.parse('$BASE_URL/leavenotification/$notificationId/mark_as_read/'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          final index = _allNotifications.indexWhere((n) => n.id == notificationId);
+          if (index != -1) {
+            _allNotifications[index].isRead = true;
+          }
+        });
+      }
+    } catch (e) {
+      // Handle error silently or show a snackbar
+    }
+  }
 
   String _formatTimestamp(DateTime timestamp) {
     return DateFormat('MMM d, yyyy - h:mm a').format(timestamp);
@@ -138,29 +190,37 @@ class _NotificationPageState extends State<NotificationPage> {
           itemCount: notifications.length,
           itemBuilder: (context, index) {
             final notification = notifications[index];
-            return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      notification.message,
-                      style: TextStyle(
-                        color: notification.isRead ? Colors.grey : Colors.black,
+            return InkWell(
+              onTap: () {
+                if (!notification.isRead) {
+                  _markAsRead(notification.id);
+                }
+              },
+              child: Card(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        notification.message,
+                        style: TextStyle(
+                          color: notification.isRead ? Colors.grey : Colors.black,
+                          fontWeight: notification.isRead ? FontWeight.normal : FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _formatTimestamp(notification.timestamp),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                        fontStyle: FontStyle.italic,
+                      const SizedBox(height: 8),
+                      Text(
+                        _formatTimestamp(notification.timestamp),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                          fontStyle: FontStyle.italic,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             );
@@ -179,29 +239,36 @@ class _NotificationPageState extends State<NotificationPage> {
 
     return Scaffold(
       appBar: AppBar(
-  centerTitle: true, // This centers the title
-  title: CustomTitleText(text: 'Notification'),
-  leading: IconButton(
-    icon: Icon(Icons.arrow_back, color: Colors.white),
-    onPressed: () {
-      Navigator.pop(context);
-    },
-  ),
-  iconTheme: IconThemeData(color: Colors.white),
-  backgroundColor: primary,
-),
-
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildNotificationList('Today', todayNotifications),
-            _buildNotificationList('Yesterday', yesterdayNotifications),
-            _buildNotificationList('This Week', thisWeekNotifications),
-            _buildNotificationList('Older', olderNotifications),
-          ],
+        centerTitle: true,
+        title: CustomTitleText(text: 'Notification'),
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () {
+            Navigator.pop(context);
+          },
         ),
+        iconTheme: IconThemeData(color: Colors.white),
+        backgroundColor: primary,
       ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _errorMessage != null
+              ? Center(child: Text(_errorMessage!))
+              : RefreshIndicator(
+                  onRefresh: _fetchNotifications,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildNotificationList('Today', todayNotifications),
+                        _buildNotificationList('Yesterday', yesterdayNotifications),
+                        _buildNotificationList('This Week', thisWeekNotifications),
+                        _buildNotificationList('Older', olderNotifications),
+                      ],
+                    ),
+                  ),
+                ),
     );
   }
 }

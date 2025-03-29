@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:presence/src/constants/colors.dart';
 import 'package:presence/src/features/modules/hr/hrcancellation.dart';
 import 'package:presence/src/features/modules/hr/hrleaverequest.dart';
+import 'package:presence/src/features/modules/hr/hrleavehistory.dart'; // Import the new history page
 
 class Hrleavepage extends StatefulWidget {
   const Hrleavepage({super.key});
@@ -12,14 +13,22 @@ class Hrleavepage extends StatefulWidget {
 
 class HrleavepageState extends State<Hrleavepage> {
   int _selectedIndex = 0;
-  final List<String> tabs = ["leave", "cancellation"];
+  
+  // Updated tabs list to include 'history'
+  final List<String> tabs = ["leave", "cancellation", "history"];
 
-  final List<Widget> content = [LeaveRequestPage(), LeaveCancellationRequestList()];
+  // Updated content list to include LeaveHistoryPage
+  final List<Widget> content = [
+    LeaveRequestPage(), 
+    LeaveCancellationRequestList(), 
+    HrLeaveHistory() // New page for leave history
+  ];
 
   @override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
     double screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: Column(
@@ -40,7 +49,9 @@ class HrleavepageState extends State<Hrleavepage> {
                   curve: Curves.easeInOut,
                   alignment: _selectedIndex == 0
                       ? Alignment.centerLeft
-                      : Alignment.centerRight,
+                      : _selectedIndex == 1
+                          ? Alignment.center
+                          : Alignment.centerRight,
                   child: Container(
                     width: MediaQuery.of(context).size.width / tabs.length - 40,
                     height: MediaQuery.of(context).size.height * 0.05,
@@ -61,7 +72,6 @@ class HrleavepageState extends State<Hrleavepage> {
                         },
                         child: Container(
                           alignment: Alignment.center,
-                          //padding: EdgeInsets.all(screenWidth * 0.02),
                           child: Text(
                             tabs[index],
                             style: TextStyle(

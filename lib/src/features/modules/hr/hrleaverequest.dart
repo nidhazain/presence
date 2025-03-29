@@ -16,7 +16,6 @@ class LeaveRequestPage extends StatefulWidget {
 
 class _LeaveRequestPageState extends State<LeaveRequestPage> {
   final apiEndpoints = ApiEndpoints();
-// Then use:
   List<Map<String, dynamic>> leaveRequests = [];
   bool isLoading = true;
   String errorMessage = '';
@@ -29,7 +28,41 @@ class _LeaveRequestPageState extends State<LeaveRequestPage> {
     _fetchPendingLeaveRequests();
   }
 
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.file_copy_outlined,
+            size: 100,
+            color: Colors.grey.shade400,
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'No Pending Leave Requests',
+            style: TextStyle(
+              fontSize: 18,
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'All leave requests have been processed or there are no new requests',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _fetchPendingLeaveRequests() async {
+    if (!mounted) return;
     setState(() {
       isLoading = true;
       errorMessage = '';
@@ -48,6 +81,7 @@ class _LeaveRequestPageState extends State<LeaveRequestPage> {
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
+        if (!mounted) return;
         setState(() {
           leaveRequests = data.map((leave) {
             return {
@@ -65,12 +99,14 @@ class _LeaveRequestPageState extends State<LeaveRequestPage> {
           isLoading = false;
         });
       } else {
+        if (!mounted) return;
         setState(() {
           isLoading = false;
           errorMessage = 'Failed to load leave requests: ${response.reasonPhrase}';
         });
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         isLoading = false;
         errorMessage = 'Error fetching leave requests: $e';
@@ -112,15 +148,18 @@ class _LeaveRequestPageState extends State<LeaveRequestPage> {
       if (response.statusCode == 200) {
         // Refresh the list after successful update
         await _fetchPendingLeaveRequests();
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Leave ${action}d successfully!')),
         );
       } else {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to update leave status: ${response.reasonPhrase}')),
         );
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error updating leave status: $e')),
       );
@@ -278,7 +317,7 @@ class _LeaveRequestPageState extends State<LeaveRequestPage> {
           : errorMessage.isNotEmpty
               ? Center(child: Text(errorMessage))
               : leaveRequests.isEmpty
-                  ? Center(child: Text('No pending leave requests'))
+                  ? _buildEmptyState() 
                   : ListView.separated(
                       itemCount: leaveRequests.length,
                       separatorBuilder: (context, index) => Divider(

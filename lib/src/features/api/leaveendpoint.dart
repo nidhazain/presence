@@ -1,10 +1,8 @@
  import 'package:presence/src/features/api/url.dart';
 
 class ApiEndpoints {
-  final String pendingLeaveRequests = '$BASE_URL/hrleaverequestview/';
-  final String approveRejectLeave = '$BASE_URL/approve-reject-leave/';
-  
-  // If you need to make them static, you would declare them like this:
-  // static const String pendingLeaveRequests = 'your-api-url/pending-leaves/';
-  // static const String approveRejectLeave = 'your-api-url/leaves/';
+ String pendingLeaveRequests = '$BASE_URL/hrleaverequestview/';
+ String approveRejectLeave = '$BASE_URL/approve-reject-leave/';
+ String pendingCancellationRequests = '$BASE_URL/leavecancellationview/';
+ String approveRejectCancellation = '$BASE_URL/approve-reject-cancellation/';
 }

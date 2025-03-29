@@ -17,106 +17,106 @@ class _BalancePageState extends State<BalancePage> {
     leaveFuture = BalanceService().fetchLeaveBalance();
   }
 
-  // void showBalanceDetailsDialog(BuildContext context, LeaveBalanceModel leave) {
-  //   showDialog(
-  //     context: context,
-  //     builder: (context) => AlertDialog(
-  //       shape: RoundedRectangleBorder(
-  //         borderRadius: BorderRadius.circular(15),
-  //       ),
-  //       title: Row(
-  //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //         children: [
-  //           CustomTitleText8(text: leave.name),
-  //           IconButton(
-  //             icon: Icon(Icons.close, color: Colors.grey),
-  //             onPressed: () {
-  //               Navigator.of(context).pop();
-  //             },
-  //           ),
-  //         ],
-  //       ),
-  //       content: leave.dates.isNotEmpty
-  //           ? SizedBox(
-  //               width: double.maxFinite,
-  //               child: ListView.builder(
-  //                 shrinkWrap: true,
-  //                 itemCount: leave.dates.length,
-  //                 itemBuilder: (context, index) {
-  //                   final period = leave.dates[index];
-  //                   final leavePeriod = period['end_date'] != null
-  //                       ? "${period['start_date']} to ${period['end_date']}"
-  //                       : period['start_date'];
-  //                   return Padding(
-  //                     padding: const EdgeInsets.symmetric(vertical: 4.0),
-  //                     child: textfield(
-  //                       data: leavePeriod,
-  //                     ),
-  //                   );
-  //                 },
-  //               ),
-  //             )
-  //           : textfield(data: "No leave history available."),
-  //     ),
-  //   );
-  // }
   void showBalanceDetailsDialog(BuildContext context, LeaveBalanceModel leave) {
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
-      ),
-      title: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          CustomTitleText8(text: leave.name),
-          IconButton(
-            icon: Icon(Icons.close, color: Colors.grey),
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-          ),
-        ],
-      ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Status Text added here
-          Text(
-            'Status: ${leave.status}',
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+        ),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            CustomTitleText8(text: leave.name),
+            IconButton(
+              icon: Icon(Icons.close, color: Colors.grey),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
             ),
-          ),
-          const SizedBox(height: 8),
-          leave.dates.isNotEmpty
-              ? SizedBox(
-                  width: double.maxFinite,
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: leave.dates.length,
-                    itemBuilder: (context, index) {
-                      final period = leave.dates[index];
-                      final leavePeriod = period['end_date'] != null
-                          ? "${period['start_date']} to ${period['end_date']}"
-                          : period['start_date'];
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4.0),
-                        child: textfield(
-                          data: leavePeriod,
-                        ),
-                      );
-                    },
-                  ),
-                )
-              : textfield(data: "No leave history available."),
-        ],
+          ],
+        ),
+        content: leave.dates.isNotEmpty
+            ? SizedBox(
+                width: double.maxFinite,
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: leave.dates.length,
+                  itemBuilder: (context, index) {
+                    final period = leave.dates[index];
+                    final leavePeriod = period['end_date'] != null
+                        ? "${period['start_date']} to ${period['end_date']}"
+                        : period['start_date'] ;
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4.0),
+                      child: textfield(
+                        data: leavePeriod,
+                      ),
+                    );
+                  },
+                ),
+              )
+            : textfield(data: "No leave history available."),
       ),
-    ),
-  );
-}
+    );
+  }
+//   void showBalanceDetailsDialog(BuildContext context, LeaveBalanceModel leave) {
+//   showDialog(
+//     context: context,
+//     builder: (context) => AlertDialog(
+//       shape: RoundedRectangleBorder(
+//         borderRadius: BorderRadius.circular(15),
+//       ),
+//       title: Row(
+//         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//         children: [
+//           CustomTitleText8(text: leave.name),
+//           IconButton(
+//             icon: Icon(Icons.close, color: Colors.grey),
+//             onPressed: () {
+//               Navigator.of(context).pop();
+//             },
+//           ),
+//         ],
+//       ),
+//       content: Column(
+//         mainAxisSize: MainAxisSize.min,
+//         crossAxisAlignment: CrossAxisAlignment.start,
+//         children: [
+//           // Status Text added here
+//           Text(
+//             'Status: ${leave.status}',
+//             style: const TextStyle(
+//               fontWeight: FontWeight.bold,
+//             ),
+//           ),
+//           const SizedBox(height: 8),
+//           leave.dates.isNotEmpty
+//               ? SizedBox(
+//                   width: double.maxFinite,
+//                   child: ListView.builder(
+//                     shrinkWrap: true,
+//                     itemCount: leave.dates.length,
+//                     itemBuilder: (context, index) {
+//                       final period = leave.dates[index];
+//                       final leavePeriod = period['end_date'] != null
+//                           ? "${period['start_date']} to ${period['end_date']}"
+//                           : period['start_date'];
+//                       return Padding(
+//                         padding: const EdgeInsets.symmetric(vertical: 4.0),
+//                         child: textfield(
+//                           data: leavePeriod,
+//                         ),
+//                       );
+//                     },
+//                   ),
+//                 )
+//               : textfield(data: "No leave history available."),
+//         ],
+//       ),
+//     ),
+//   );
+// }
 
 
   @override
@@ -236,16 +236,15 @@ class LeaveBalanceModel {
   final String name;
   final String used;
   final List<dynamic> dates;
-  final String status;
 
-  LeaveBalanceModel({required this.name, required this.used, required this.dates,required this.status});
+  LeaveBalanceModel({required this.name, required this.used, required this.dates});
 
   factory LeaveBalanceModel.fromJson(Map<String, dynamic> json) {
     return LeaveBalanceModel(
       name: json['name'],
       used: json['used'],
       dates: json['dates'] ?? [],
-      status : json['status'],
+      
     );
   }
 }

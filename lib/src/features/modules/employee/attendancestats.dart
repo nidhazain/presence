@@ -16,25 +16,7 @@ class Attendancestats extends StatefulWidget {
 class _AttendancestatsState extends State<Attendancestats> {
   int? touchedIndex;
 
-Future<void> loadAttendanceStats(String monthName) async {
-  print("Fetching data for $monthName..."); // Debug log
-  final data = await AttendanceService.fetchAttendanceStats(monthName);
-  if (data != null) {
-    print("Data fetched: ${data.toString()}"); // Debug log
-    setState(() {
-      attendanceData = [
-        {'label': 'Present', 'value': data.present, 'color': purple},
-        {'label': 'Late', 'value': data.late, 'color': blue},
-        {'label': 'Absent', 'value': data.absent, 'color': primary},
-      ];
-    });
-  } else {
-    setState(() {
-      attendanceData = []; // Reset data if no data is found
-    });
-  }
-}
-
+  List<Map<String, dynamic>> attendanceData = []; // Data for selected month
 
   List<String> months = [
     'January',
@@ -68,17 +50,35 @@ Future<void> loadAttendanceStats(String monthName) async {
           'December'
         ][DateTime.now().month - 1];
 
-  List<Map<String, dynamic>> attendanceData = []; // Data for selected month
-
   @override
   void initState() {
     super.initState();
     _fetchAttendanceData();
   }
 
+  Future<void> loadAttendanceStats(String monthName) async {
+    print("Fetching data for $monthName..."); // Debug log
+    final data = await AttendanceService.fetchAttendanceStats(monthName);
+    // Check if the widget is still mounted before calling setState
+    if (!mounted) return;
+    if (data != null) {
+      print("Data fetched: ${data.toString()}"); // Debug log
+      setState(() {
+        attendanceData = [
+          {'label': 'Present', 'value': data.present, 'color': purple},
+          {'label': 'Late', 'value': data.late, 'color': blue},
+          {'label': 'Absent', 'value': data.absent, 'color': primary},
+        ];
+      });
+    } else {
+      setState(() {
+        attendanceData = []; // Reset data if no data is found
+      });
+    }
+  }
+
   void _fetchAttendanceData() async {
-    await loadAttendanceStats(
-        selectedMonth); // Make sure data is fetched when initialized
+    await loadAttendanceStats(selectedMonth); // Fetch data when initialized
   }
 
   double get totalValue =>
@@ -104,8 +104,8 @@ Future<void> loadAttendanceStats(String monthName) async {
               children: [
                 Expanded(
                   flex: 3,
-                  child:
-                      CustomTitleText8(text: 'Monthly Attendance Statistics'),
+                  child: CustomTitleText8(
+                      text: 'Monthly Attendance Statistics'),
                 ),
                 const SizedBox(width: 8),
                 Container(
@@ -152,9 +152,7 @@ Future<void> loadAttendanceStats(String monthName) async {
                 ),
               ],
             ),
-
             SizedBox(height: screenHeight * 0.04),
-
             // Check if attendanceData is empty, display a message if no data is found
             attendanceData.isEmpty
                 ? Center(
@@ -165,7 +163,7 @@ Future<void> loadAttendanceStats(String monthName) async {
                   )
                 : Column(
                     children: [
-                      // Enhanced Pie Chart and Legend, as you have in the original code
+                      // Enhanced Pie Chart and Legend
                       AspectRatio(
                         aspectRatio: 1.3,
                         child: Stack(
@@ -176,16 +174,21 @@ Future<void> loadAttendanceStats(String monthName) async {
                                 pieTouchData: PieTouchData(
                                   touchCallback:
                                       (FlTouchEvent event, pieTouchResponse) {
-                                    setState(() {
-                                      if (!event.isInterestedForInteractions ||
-                                          pieTouchResponse == null ||
-                                          pieTouchResponse.touchedSection ==
-                                              null) {
+                                    // Check if widget is still mounted before calling setState
+                                    if (!mounted) return;
+                                    if (!event.isInterestedForInteractions ||
+                                        pieTouchResponse == null ||
+                                        pieTouchResponse.touchedSection ==
+                                            null) {
+                                      setState(() {
                                         touchedIndex = -1;
-                                        return;
-                                      }
+                                      });
+                                      return;
+                                    }
+                                    setState(() {
                                       touchedIndex = pieTouchResponse
-                                          .touchedSection!.touchedSectionIndex;
+                                          .touchedSection!
+                                          .touchedSectionIndex;
                                     });
                                   },
                                 ),
@@ -199,16 +202,15 @@ Future<void> loadAttendanceStats(String monthName) async {
                                       (data['value'] / totalValue) * 100;
                                   return PieChartSectionData(
                                     value: data['value'].toDouble(),
-                                    title:
-                                        '${percentValue.toStringAsFixed(1)}%',
+                                    title: '${percentValue.toStringAsFixed(1)}%',
                                     titleStyle: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.bold,
                                       color: Colors.white,
                                       shadows: [
                                         Shadow(
-                                            color:
-                                                Colors.black.withOpacity(0.3),
+                                            color: Colors.black
+                                                .withOpacity(0.3),
                                             blurRadius: 2)
                                       ],
                                     ),
@@ -249,7 +251,8 @@ Future<void> loadAttendanceStats(String monthName) async {
                             final percentage =
                                 getPercentage(data['value'].toDouble());
                             return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 8),
                               child: Row(
                                 children: [
                                   Container(
@@ -284,7 +287,6 @@ Future<void> loadAttendanceStats(String monthName) async {
                     ],
                   ),
             SizedBox(height: screenHeight * 0.01),
-
             // Request Attendance Button
             SizedBox(
               width: double.infinity,
@@ -298,7 +300,6 @@ Future<void> loadAttendanceStats(String monthName) async {
                 },
               ),
             ),
-
             SizedBox(height: screenHeight * 0.02),
           ],
         ),

@@ -37,9 +37,9 @@ class OvertimeService {
         'Authorization': 'Bearer $token',
       },
     );
-
     if (response.statusCode == 200) {
       final jsonData = json.decode(response.body);
+      print(jsonData);
       final upcoming = (jsonData['upcoming_overtime'] as List)
           .map((e) => OvertimeEntry(
               date: DateTime.parse(e['date']),

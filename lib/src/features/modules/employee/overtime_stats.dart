@@ -19,21 +19,24 @@ class _OvertimestatsPageState extends State<OvertimestatsPage> {
   int? selectedMonth;
   double? selectedHours;
 
-  @override
-  void initState() {
-    super.initState();
-    overtimeStatsFuture = OvertimeService.fetchOvertimeStats();
-    overtimeStatsFuture.then((stats) {
+ @override
+void initState() {
+  super.initState();
+  overtimeStatsFuture = OvertimeService.fetchOvertimeStats();
+  overtimeStatsFuture.then((stats) {
+    if (mounted) { // Prevents calling setState if widget is disposed
       setState(() {
         overtimeHours = List.generate(12, (index) {
           return stats.monthlyOvertime[_getMonthName(index)] ?? 0.0;
         });
         _startAnimation();
       });
-    }).catchError((error) {
-      debugPrint('Error fetching overtime stats: $error');
-    });
-  }
+    }
+  }).catchError((error) {
+    debugPrint('Error fetching overtime stats: $error');
+  });
+}
+
 
   String _getMonthName(int index) {
     const months = [
@@ -53,13 +56,16 @@ class _OvertimestatsPageState extends State<OvertimestatsPage> {
     return months[index];
   }
 
-  void _startAnimation() {
-    Future.delayed(const Duration(milliseconds: 300), () {
+void _startAnimation() {
+  Future.delayed(const Duration(milliseconds: 300), () {
+    if (mounted) { 
       setState(() {
         animatedValues = List.from(overtimeHours);
       });
-    });
-  }
+    }
+  });
+}
+
 
   @override
   Widget build(BuildContext context) {

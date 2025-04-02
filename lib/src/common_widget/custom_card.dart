@@ -388,3 +388,40 @@ class CustomCard9 extends StatelessWidget {
   }
 
 }
+
+class CustomCard10 extends StatelessWidget {
+  final String title;
+  final String subtitle;
+
+  const CustomCard10({super.key, required this.title, required this.subtitle});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        border: Border.all(color: blue,width: 2),
+        borderRadius: BorderRadius.circular(20),
+        color: Colors.white,
+        // boxShadow: [
+        //   BoxShadow(
+        //     color: Colors.black.withOpacity(0.2),
+        //     blurRadius: 5,
+        //     spreadRadius: 1,
+        //     offset: Offset(4, 4),
+        //   ),
+        // ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          CustomTitleText8(text: title),
+          const SizedBox(height: 10),
+          CustomTitleText7(text: subtitle)
+        ],
+      ),
+    );
+  }
+
+}

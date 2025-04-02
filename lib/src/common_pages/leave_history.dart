@@ -82,7 +82,7 @@ class _LeaveHistoryState extends State<LeaveHistory> {
         ),
         actions: [
           CustomButton(
-              text: 'cancel',
+              text: 'cancel request',
               onPressed: () async {
                 if (_reasonController.text.trim().isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(

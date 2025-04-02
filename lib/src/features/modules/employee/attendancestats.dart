@@ -57,12 +57,12 @@ class _AttendancestatsState extends State<Attendancestats> {
   }
 
   Future<void> loadAttendanceStats(String monthName) async {
-    print("Fetching data for $monthName..."); // Debug log
+    print("Fetching data for $monthName..."); 
     final data = await AttendanceService.fetchAttendanceStats(monthName);
-    // Check if the widget is still mounted before calling setState
+  
     if (!mounted) return;
     if (data != null) {
-      print("Data fetched: ${data.toString()}"); // Debug log
+      print("Data fetched: ${data.toString()}"); 
       setState(() {
         attendanceData = [
           {'label': 'Present', 'value': data.present, 'color': purple},
@@ -169,54 +169,56 @@ class _AttendancestatsState extends State<Attendancestats> {
                         child: Stack(
                           alignment: Alignment.center,
                           children: [
-                            PieChart(
-                              PieChartData(
-                                pieTouchData: PieTouchData(
-                                  touchCallback:
-                                      (FlTouchEvent event, pieTouchResponse) {
-                                    // Check if widget is still mounted before calling setState
-                                    if (!mounted) return;
-                                    if (!event.isInterestedForInteractions ||
-                                        pieTouchResponse == null ||
-                                        pieTouchResponse.touchedSection ==
-                                            null) {
+                            GestureDetector(
+                              child: PieChart(
+                                PieChartData(
+                                  pieTouchData: PieTouchData(
+                                    touchCallback:
+                                        (FlTouchEvent event, pieTouchResponse) {
+                                      // Check if widget is still mounted before calling setState
+                                      if (!mounted) return;
+                                      if (!event.isInterestedForInteractions ||
+                                          pieTouchResponse == null ||
+                                          pieTouchResponse.touchedSection ==
+                                              null) {
+                                        setState(() {
+                                          touchedIndex = -1;
+                                        });
+                                        return;
+                                      }
                                       setState(() {
-                                        touchedIndex = -1;
+                                        touchedIndex = pieTouchResponse
+                                            .touchedSection!
+                                            .touchedSectionIndex;
                                       });
-                                      return;
-                                    }
-                                    setState(() {
-                                      touchedIndex = pieTouchResponse
-                                          .touchedSection!
-                                          .touchedSectionIndex;
-                                    });
-                                  },
+                                    },
+                                  ),
+                                  borderData: FlBorderData(show: false),
+                                  sectionsSpace: 2,
+                                  centerSpaceRadius: screenWidth * 0.15,
+                                  sections: List.generate(attendanceData.length,
+                                      (index) {
+                                    final data = attendanceData[index];
+                                    final double percentValue =
+                                        (data['value'] / totalValue) * 100;
+                                    return PieChartSectionData(
+                                      value: data['value'].toDouble(),
+                                      title: '${percentValue.toStringAsFixed(1)}%',
+                                      titleStyle: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                        shadows: [
+                                          Shadow(
+                                              color: Colors.black
+                                                  .withOpacity(0.3),
+                                              blurRadius: 2)
+                                        ],
+                                      ),
+                                      color: data['color'],
+                                    );
+                                  }),
                                 ),
-                                borderData: FlBorderData(show: false),
-                                sectionsSpace: 2,
-                                centerSpaceRadius: screenWidth * 0.15,
-                                sections: List.generate(attendanceData.length,
-                                    (index) {
-                                  final data = attendanceData[index];
-                                  final double percentValue =
-                                      (data['value'] / totalValue) * 100;
-                                  return PieChartSectionData(
-                                    value: data['value'].toDouble(),
-                                    title: '${percentValue.toStringAsFixed(1)}%',
-                                    titleStyle: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                      shadows: [
-                                        Shadow(
-                                            color: Colors.black
-                                                .withOpacity(0.3),
-                                            blurRadius: 2)
-                                      ],
-                                    ),
-                                    color: data['color'],
-                                  );
-                                }),
                               ),
                             ),
                             // Center text showing total days

@@ -188,7 +188,6 @@ class _ShiftCalendarScreenState extends State<ShiftCalendarScreen> {
         });
       },
       onPageChanged: (focusedDay) {
-        // When month changes, fetch data for the new month
         setState(() {
           _focusedDay = focusedDay;
         });
@@ -202,7 +201,6 @@ class _ShiftCalendarScreenState extends State<ShiftCalendarScreen> {
           _selectedDay = selectedDay;
           _focusedDay = focusedDay;
         });
-        // Check if we already have colleagues data for this date
         if (_colleaguesMap.containsKey(_normalizeDate(selectedDay))) {
           setState(() {
             _colleagues = _colleaguesMap[_normalizeDate(selectedDay)]!;

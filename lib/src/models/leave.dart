@@ -28,7 +28,7 @@ factory Leave.fromJson(Map<String, dynamic> json) {
     endDate: json['end_date'],
     status: json['status'] ?? 'Unknown',
     reason: json['reason'] ?? 'No reason provided',
-    imageUrl: json['image'] ?? json['imageUrl'],
+    imageUrl: json['image'] != null ? 'http://192.168.251.51:8000${json['image']}' : null,
     cancellationReason: json['cancellation_reason'] ?? json['cancellationReason'],
   );
 }

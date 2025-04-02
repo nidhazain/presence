@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 import 'package:presence/src/features/api/api.dart';
 import 'package:presence/src/features/api/url.dart';
 
@@ -13,8 +14,6 @@ class ShiftService {
         'Authorization': 'Bearer $token',
       },
     );
-    print('Status code: ${response.statusCode}');
-    print('Response body: ${response.body}');
     if (response.statusCode == 200) {
       return jsonDecode(response.body) as List<dynamic>;
     } else {
@@ -42,4 +41,22 @@ class ShiftService {
       throw Exception('Failed to load shift colleagues');
     }
   }
+
+  static Future<Map<String, dynamic>> fetchShiftAssignments() async {
+    final currentDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    final url = Uri.parse('$BASE_URL/assignview/?date=$currentDate');
+    
+    try {
+      final response = await http.get(url);
+      
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to load shift assignments: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Failed to load shift assignments: $e');
+    }
+  }
 }
+

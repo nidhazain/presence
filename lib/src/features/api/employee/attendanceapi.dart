@@ -33,7 +33,7 @@ class AttendanceService {
             .add(await http.MultipartFile.fromPath('image', imageFile.path));
       }
 
-      // Send the request
+
       var response = await request.send();
 
       return response.statusCode == 201;
@@ -103,7 +103,6 @@ class AttendanceService {
   'December',
 ];
 
-//   final monthIndex = months.indexOf(monthName) + 1;
   int monthNumber = months.indexOf(monthName) + 1;
   int year = DateTime.now().year;
   final token = await TokenService.getAccessToken();
@@ -124,4 +123,34 @@ class AttendanceService {
   }
 }
 
+Future<Map<String, dynamic>> getHRAttendanceReport({
+    String? startDate,
+    String? endDate,
+  }) async {
+    try {
+      final uri = Uri.parse('$BASE_URL/attendancedashboard/');
+      final queryParams = {
+        if (startDate != null) 'start_date': startDate,
+        if (endDate != null) 'end_date': endDate,
+      };
+      await TokenService.ensureAccessToken();
+    String? token = await TokenService.getAccessToken();
+      final response = await http.get(
+        uri.replace(queryParameters: queryParams),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to load attendance report: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Failed to load attendance report: $e');
+    }
+  }
 }
+

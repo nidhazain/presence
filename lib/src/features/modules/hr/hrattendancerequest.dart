@@ -1,7 +1,11 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:presence/src/common_widget/custom_card.dart';
 import 'package:presence/src/common_widget/text_tile.dart';
-import 'package:presence/src/constants/colors.dart';
+import 'package:presence/src/features/api/common/tokenservice.dart';
+import 'package:presence/src/features/api/url.dart';
 
 class ManualAttendancePage extends StatefulWidget {
   @override
@@ -9,235 +13,247 @@ class ManualAttendancePage extends StatefulWidget {
 }
 
 class _ManualAttendancePageState extends State<ManualAttendancePage> {
-  final List<ManualAttendance> attendances = [
-    ManualAttendance(
-      workType: "Field Work",
-      date: "2025-03-12",
-      startTime: "09:00 AM",
-      endTime: "05:00 PM",
-      proof: "New York, Times Square",
-      isImage: false,
-    ),
-    ManualAttendance(
-      workType: "Work From Home",
-      date: "2025-03-10",
-      startTime: "10:00 AM",
-      endTime: "06:00 PM",
-      proof: "images/pro.jpg",
-      isImage: true,
-    ),
-  ];
+  List<AttendanceRequest> requests = [];
+  bool isLoading = true;
+  String errorMessage = '';
+  http.Client? _httpClient;
+  StreamSubscription? _requestSubscription;
 
-  final Map<int, String> status = {};
-  final Map<int, String> rejectionReasons = {};
-void _showDetailsDialog(ManualAttendance attendance, int index) {
-  String currentStatus = status[index] ?? "Pending";
-  String? reason = rejectionReasons[index];
-
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      contentPadding: EdgeInsets.all(16),
-      content: Stack(
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 20.0),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  CustomTitleText10(text: attendance.workType),
-                  SizedBox(height: 10),
-                  CustomTitleText10(text: "Date:"),
-                  textfield(data: attendance.date),
-
-                  CustomTitleText10(text: "Start Time:"),
-                  textfield(data: attendance.startTime),
-
-                  CustomTitleText10(text: "End Time:"),
-                  textfield(data: attendance.endTime),
-
-                  CustomTitleText10(text: "Attachment:"),
-                  SizedBox(height: 10),
-                  attendance.isImage
-                      ? Container(
-                          constraints: BoxConstraints(
-                            maxWidth: MediaQuery.of(context).size.width * 0.3,
-                            maxHeight: 200,
-                          ),
-                          child: Image.asset(
-                            attendance.proof,
-                            fit: BoxFit.contain,
-                          ),
-                        )
-                      : Text("Proof: ${attendance.proof}"),
-                  SizedBox(height: 15),
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        backgroundColor: getStatusColor(currentStatus),
-                        radius: 5,
-                      ),
-                      SizedBox(width: 10),
-                      Text(
-                        currentStatus,
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: getStatusColor(currentStatus)),
-                      ),
-                    ],
-                  ),
-                  if (currentStatus == "Rejected" &&
-                      reason != null &&
-                      reason.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 10.0),
-                      child: Text(
-                        "Reason: $reason",
-                        style: TextStyle(color: Colors.redAccent),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-          Positioned(
-            top: 0,
-            right: 0,
-            child: IconButton(
-              icon: Icon(Icons.close, color: Colors.grey),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
-
-
-  void updateStatus(int index, String newStatus) {
-    setState(() {
-      status[index] = newStatus;
-    });
+  @override
+  void initState() {
+    super.initState();
+    _httpClient = http.Client();
+    _fetchRequests();
   }
 
-  void showRejectConfirmation(int index) {
-    TextEditingController reasonController = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text("Confirm Rejection"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text("Please provide a reason for rejection."),
-            SizedBox(height: 10),
-            TextField(
-              controller: reasonController,
-              decoration: InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: "Enter reason...",
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            child: Text("Cancel"),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-          TextButton(
-            child: Text("Reject"),
-            onPressed: () {
-              setState(() {
-                status[index] = "Rejected";
-                rejectionReasons[index] = reasonController.text;
-              });
-              Navigator.of(context).pop();
+  @override
+  void dispose() {
+    _requestSubscription?.cancel();
+    _httpClient?.close();
+    super.dispose();
+  }
+
+  Future<void> _fetchRequests() async {
+    try {
+      final token = await TokenService.getAccessToken();
+      final response = await _httpClient!.get(
+        Uri.parse('$BASE_URL/attendance/requests/'),
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(Duration(seconds: 30));
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        List<dynamic> requestsList = [];
+
+        if (responseData is Map &&
+            responseData.containsKey('pending_attendance_requests')) {
+          requestsList = responseData['pending_attendance_requests'] ?? [];
+        }
+
+        if (mounted) {
+          setState(() {
+            requests = requestsList.map((item) {
+              return AttendanceRequest.fromJson(item as Map<String, dynamic>);
+            }).toList();
+            isLoading = false;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            errorMessage = 'Failed to load: ${response.statusCode}';
+            isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          errorMessage =
+              'Error: ${e is TimeoutException ? 'Request timed out' : e.toString()}';
+          isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _updateRequest(String action, AttendanceRequest request) async {
+    try {
+      final token = await TokenService.getAccessToken();
+      final response = await _httpClient!
+          .post(
+            Uri.parse('$BASE_URL/attendance/requests/'),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
             },
-          ),
-        ],
-      ),
-    );
-  }
+            body: json.encode({
+              "id": request.id, // Use the request's ID here
+              'action': action,
+              //'reject_reason': reason ?? '',
+            }),
+          )
+          .timeout(Duration(seconds: 30));
 
-  Color getStatusColor(String? status) {
-    switch (status) {
-      case "Accepted":
-        return dgreen;
-      case "Rejected":
-        return red;
-      default:
-        return Colors.orange; // Pending
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Status updated successfully')),
+          );
+        }
+        await _fetchRequests();
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to update status')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(
+                  'Error: ${e is TimeoutException ? 'Request timed out' : 'Failed to update'}')),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) return Center(child: CircularProgressIndicator());
+    if (errorMessage.isNotEmpty) return Center(child: Text(errorMessage));
+    if (requests.isEmpty) return Center(child: Text('No pending requests'));
+
     return Scaffold(
-      appBar:
-          AppBar(title: CustomTitleText8(text: 'Attendance Requests'), backgroundColor: Colors.white),
-      backgroundColor: Colors.white,
-      body: ListView.separated(
-        itemCount: attendances.length,
-        separatorBuilder: (context, index) => Divider(
-            color: primary.withOpacity(.3),
-            height: 1),
-        itemBuilder: (context, index) {
-          final attendance = attendances[index];
-          return ListTile(
-            title: CustomTitleText10(text: attendance.workType),
-            subtitle: CustomTitleText20(text: attendance.date),
-            trailing: status.containsKey(index)
-                ? Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      CircleAvatar(
-                        backgroundColor: getStatusColor(status[index]),
-                        radius: 5,
-                      ),
-                      SizedBox(width: 10),
-                      CustomTitleText9(text: status[index]!)
-                    ],
-                  )
-                : Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: Icon(Icons.check, color: dgreen),
-                        onPressed: () => updateStatus(index, "Accepted"),
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.close, color: red),
-                        onPressed: () => showRejectConfirmation(index),
-                      ),
-                    ],
-                  ),
-            onTap: () => _showDetailsDialog(attendance, index),
-          );
-        },
+      appBar: AppBar(
+        title: CustomTitleText8(text: 'Attendance Requests'),
+        backgroundColor: Colors.white,
+      ),
+      body: RefreshIndicator(
+        onRefresh: _fetchRequests,
+        child: ListView.builder(
+          itemCount: requests.length,
+          itemBuilder: (context, index) {
+            final request = requests[index];
+            return Card(
+              margin: EdgeInsets.all(8),
+              child: ListTile(
+                title: CustomTitleText10(text: request.employeeName),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(' ${request.workType}'),
+                    Text('Date: ${request.date}'),
+                    // Text('Time: ${request.checkIn ?? '--'} to ${request.checkOut ?? '--'}'),
+                  ],
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.check, color: Colors.green),
+                      onPressed: () => _updateRequest('approve', request),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.close, color: Colors.red),
+                      onPressed: () => _updateRequest('reject', request),
+                    ),
+                  ],
+                ),
+                onTap: () => _showDetailsDialog(request),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  void _showDetailsDialog(AttendanceRequest request) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(request.employeeName),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Work Type: '),
+              textfield(data: '${request.workType}'),
+              SizedBox(height: 10),
+              Text('Date:'),
+              textfield(data: '${request.date} '),
+              SizedBox(height: 10),
+              Text('Check-in: '),
+              textfield(data: '${request.checkIn ?? 'Not recorded'}'),
+              Text('Check-out: '),
+              textfield(data: '${request.checkOut ?? 'Not recorded'}'),
+              if (request.location != null) ...[
+                SizedBox(height: 10),
+                Text('Location:'),
+                textfield(data: request.location!),
+              ],
+              if (request.image != null) ...[
+                SizedBox(height: 15),
+                Text('Proof:'),
+                SizedBox(height: 5),
+                Image.network(request.image!, height: 200),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            child: Text('Close'),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ],
       ),
     );
   }
 }
 
-class ManualAttendance {
-  final String workType;
+class AttendanceRequest {
+  final String id;
+  final String employeeId;
+  final String employeeName;
   final String date;
-  final String startTime;
-  final String endTime;
-  final String proof;
-  final bool isImage;
+  final String workType;
+  final String? checkIn;
+  final String? checkOut;
+  final String? image;
+  final String? location; // New location field
 
-  ManualAttendance({
-    required this.workType,
+  AttendanceRequest({
+    required this.id,
+    required this.employeeId,
+    required this.employeeName,
     required this.date,
-    required this.startTime,
-    required this.endTime,
-    required this.proof,
-    required this.isImage,
+    required this.workType,
+    this.checkIn,
+    this.checkOut,
+    this.image,
+    this.location, // Added location parameter
   });
+
+  factory AttendanceRequest.fromJson(Map<String, dynamic> json) {
+    return AttendanceRequest(
+      id: json['id']?.toString() ?? '',
+      employeeId: json['employee_id']?.toString() ?? '',
+      employeeName: json['employee_name']?.toString() ?? 'Unknown',
+      date: json['date']?.toString() ?? '',
+      workType: json['work_type']?.toString() ?? 'Not specified',
+      checkIn: json['check_in']?.toString(),
+      checkOut: json['check_out']?.toString(),
+      image: json['image']?.toString(),
+      location: json['location']?.toString(), // Parse location from JSON
+    );
+  }
 }

@@ -1,20 +1,52 @@
 import 'package:flutter/material.dart';
 import 'package:presence/src/constants/colors.dart';
+import 'package:presence/src/features/api/common/tokenservice.dart';
+import 'package:presence/src/features/api/url.dart';
 import 'package:presence/src/features/modules/hr/hrempcard.dart';
 import 'package:presence/src/features/modules/hr/hremployeedetails.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:intl/intl.dart';
 
 class Employee {
+  final int empId;
+  final String empNum;
   final String name;
+  final String? designation;
+  final String? community;
   final int workDays;
-  final int leaves;
-  final String overtime;
+  final int absentDays;
+  final int approvedLeaves;
+  final String totalOvertime;
+  final String? imageUrl;
 
   Employee({
+    required this.empId,
+    required this.empNum,
     required this.name,
+    this.designation,
+    this.community,
     required this.workDays,
-    required this.leaves,
-    required this.overtime,
+    required this.absentDays,
+    required this.approvedLeaves,
+    required this.totalOvertime,
+    this.imageUrl,
   });
+
+  factory Employee.fromJson(Map<String, dynamic> json) {
+    return Employee(
+      empId: json['emp_id'],
+      empNum: json['emp_num'],
+      name: json['name'],
+      designation: json['designation'],
+      community: json['community'],
+      workDays: json['work_days'],
+      absentDays: json['absent_days'],
+      approvedLeaves: json['approved_leaves'],
+      totalOvertime: json['total_overtime'],
+      imageUrl: json['image'],
+    );
+  }
 }
 
 class AttendanceScreen extends StatefulWidget {
@@ -25,24 +57,68 @@ class AttendanceScreen extends StatefulWidget {
 }
 
 class _AttendanceScreenState extends State<AttendanceScreen> {
-  // Get current month and year
   late int selectedMonth = DateTime.now().month;
-  //final int currentYear = DateTime.now().year;
-  
+  late int selectedYear = DateTime.now().year;
+  List<Employee> employees = [];
+  bool isLoading = true;
+  String errorMessage = '';
+
   // List of months for the dropdown
   final List<String> months = [
     'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
   ];
 
-  final List<Employee> employees = [
-    Employee(name: 'Shana Yasmin', workDays: 26, leaves: 0, overtime: '2 hrs'),
-    Employee(name: 'Farha Cheroor', workDays: 21, leaves: 4, overtime: '6 hrs'),
-    Employee(name: 'Jadeera P', workDays: 26, leaves: 0, overtime: '-'),
-    Employee(name: 'Nishida', workDays: 25, leaves: 1, overtime: '-'),
-    Employee(name: 'Huda Fathima', workDays: 20, leaves: 4, overtime: '-'),
-    Employee(name: 'Riswana', workDays: 24, leaves: 2, overtime: '1 hr'),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _fetchAttendanceData();
+  }
+
+  Future<void> _fetchAttendanceData() async {
+    setState(() {
+      isLoading = true;
+      errorMessage = '';
+    });
+
+    try {
+      // Calculate date range for the selected month/year
+      final firstDay = DateTime(selectedYear, selectedMonth, 1);
+      final lastDay = DateTime(selectedYear, selectedMonth + 1, 0);
+      
+      final startDate = DateFormat('yyyy-MM-dd').format(firstDay);
+      final endDate = DateFormat('yyyy-MM-dd').format(lastDay);
+
+      // Replace with your actual API endpoint
+      final url = Uri.parse('$BASE_URL/attendancedashboard/?start_date=$startDate&end_date=$endDate');
+      await TokenService.ensureAccessToken();
+      String? token = await TokenService.getAccessToken();
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token', // Add auth if needed
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final employeeData = data['employees'] as List;
+        
+        setState(() {
+          employees = employeeData.map((emp) => Employee.fromJson(emp)).toList();
+          isLoading = false;
+        });
+      } else {
+        throw Exception('Failed to load attendance data');
+      }
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+        errorMessage = 'Error fetching data: $e';
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,34 +142,54 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    _buildCompactMonthDropdown(),
+                    Row(
+                      children: [
+                        _buildCompactMonthDropdown(),
+                      ],
+                    ),
                   ],
                 ),
               ],
             ),
           ),
           const SizedBox(height: 12),
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: employees.length,
-              itemBuilder: (context, index) {
-                final employee = employees[index];
-                return AttendanceCard(
-                  employee: employee,
-                  index: index,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => EmployeeDetailScreen(employee: employee),
-                      ),
-                    );
-                  },
-                );
-              },
+          if (isLoading)
+            const Expanded(
+              child: Center(
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else if (errorMessage.isNotEmpty)
+            Expanded(
+              child: Center(
+                child: Text(
+                  errorMessage,
+                  style: const TextStyle(color: Colors.red),
+                ),
+              ),
+            )
+          else
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: employees.length,
+                itemBuilder: (context, index) {
+                  final employee = employees[index];
+                  return AttendanceCard(
+                    employee: employee,
+                    index: index,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => EmployeeDetailScreen(employee: employee),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -106,7 +202,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
         border: Border.all(color: primary),
         borderRadius: BorderRadius.circular(20),
       ),
-      constraints: const BoxConstraints(maxWidth: 130),
+      constraints: const BoxConstraints(maxWidth: 100),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<int>(
           value: selectedMonth,
@@ -129,10 +225,103 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
               setState(() {
                 selectedMonth = value;
               });
+              _fetchAttendanceData();
             }
           },
         ),
       ),
     );
   }
+
 }
+
+// // Update your AttendanceCard to use the new Employee model
+// class AttendanceCard extends StatelessWidget {
+//   final Employee employee;
+//   final int index;
+//   final VoidCallback onTap;
+
+//   const AttendanceCard({
+//     required this.employee,
+//     required this.index,
+//     required this.onTap,
+//     Key? key,
+//   }) : super(key: key);
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Card(
+//       margin: const EdgeInsets.only(bottom: 16),
+//       child: InkWell(
+//         onTap: onTap,
+//         child: Padding(
+//           padding: const EdgeInsets.all(16),
+//           child: Row(
+//             children: [
+//               // Add employee image if available
+//               employee.imageUrl != null
+//                   ? CircleAvatar(
+//                       backgroundImage: NetworkImage(employee.imageUrl!),
+//                       radius: 24,
+//                     )
+//                   : const CircleAvatar(
+//                       child: Icon(Icons.person),
+//                       radius: 24,
+//                     ),
+//               const SizedBox(width: 16),
+//               Expanded(
+//                 child: Column(
+//                   crossAxisAlignment: CrossAxisAlignment.start,
+//                   children: [
+//                     Text(
+//                       employee.name,
+//                       style: const TextStyle(
+//                         fontWeight: FontWeight.bold,
+//                         fontSize: 16,
+//                       ),
+//                     ),
+//                     const SizedBox(height: 4),
+//                     Text(
+//                       employee.designation ?? 'No designation',
+//                       style: TextStyle(
+//                         color: Colors.grey[600],
+//                         fontSize: 14,
+//                       ),
+//                     ),
+//                   ],
+//                 ),
+//               ),
+//               Column(
+//                 crossAxisAlignment: CrossAxisAlignment.end,
+//                 children: [
+//                   Text(
+//                     '${employee.workDays} days',
+//                     style: const TextStyle(
+//                       fontWeight: FontWeight.bold,
+//                     ),
+//                   ),
+//                   const SizedBox(height: 4),
+//                   Text(
+//                     '${employee.approvedLeaves} leaves',
+//                     style: TextStyle(
+//                       color: Colors.grey[600],
+//                       fontSize: 14,
+//                     ),
+//                   ),
+//                   const SizedBox(height: 4),
+//                   Text(
+//                     employee.totalOvertime,
+//                     style: TextStyle(
+//                       color: Colors.grey[600],
+//                       fontSize: 14,
+//                     ),
+//                   ),
+//                 ],
+//               ),
+//             ],
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+// }

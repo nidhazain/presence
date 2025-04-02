@@ -17,11 +17,17 @@ class AttendanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Format overtime from "HH:MM:SS" to "X hrs" or "-" if zero
+    final overtime = _formatOvertime(employee.totalOvertime);
+    
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 0,
       color: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12),side: BorderSide(color: primary.withOpacity(.5),)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: primary.withOpacity(.5)),
+      ),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
@@ -32,16 +38,22 @@ class AttendanceCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  CircleAvatar(
-                    backgroundColor: _getAvatarColor(index),
-                    child: Text(
-                      employee.name.substring(0, 1),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
+                  // Display image if available, otherwise use initial avatar
+                  employee.imageUrl != null
+                      ? CircleAvatar(
+                          radius: 20,
+                          backgroundImage: NetworkImage(employee.imageUrl!),
+                        )
+                      : CircleAvatar(
+                          backgroundColor: _getAvatarColor(index),
+                          child: Text(
+                            employee.name.substring(0, 1),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -49,12 +61,22 @@ class AttendanceCard extends StatelessWidget {
                       children: [
                         CustomTitleText10(text: employee.name),
                         Text(
-                          'ID: EMP${1000 + index}',
+                          'ID: ${employee.empNum}', // Use actual employee number from API
                           style: TextStyle(
                             color: Colors.grey[600],
                             fontSize: 13,
                           ),
                         ),
+                        if (employee.designation != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            employee.designation!,
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -68,9 +90,21 @@ class AttendanceCard extends StatelessWidget {
               const SizedBox(height: 16),
               Row(
                 children: [
-                  _buildInfoColumn('Work Days', '${employee.workDays}', Colors.blue),
-                  _buildInfoColumn('Leaves', employee.leaves == 0 ? '-' : '${employee.leaves}', Colors.orange),
-                  _buildInfoColumn('Overtime', employee.overtime, Colors.green),
+                  _buildInfoColumn(
+                    'Work Days', 
+                    '${employee.workDays}', 
+                    Colors.blue
+                  ),
+                  _buildInfoColumn(
+                    'Leaves', 
+                    employee.approvedLeaves == 0 ? '-' : '${employee.approvedLeaves}', 
+                    Colors.orange
+                  ),
+                  _buildInfoColumn(
+                    'Overtime', 
+                    overtime, 
+                    Colors.green
+                  ),
                 ],
               ),
             ],
@@ -78,6 +112,21 @@ class AttendanceCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _formatOvertime(String overtime) {
+    if (overtime == '0:00' || overtime.isEmpty) return '-';
+    
+    try {
+      final parts = overtime.split(':');
+      if (parts.length >= 2) {
+        final hours = int.tryParse(parts[0]) ?? 0;
+        if (hours > 0) return '$hours hr${hours > 1 ? 's' : ''}';
+      }
+      return '-';
+    } catch (e) {
+      return '-';
+    }
   }
 
   Widget _buildInfoColumn(String label, String value, Color color) {

@@ -8,19 +8,19 @@ import 'package:presence/src/features/modules/hr/hrattendancestats.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-class EmployeeDetailScreen extends StatefulWidget {
+class AttendanceDetailScreen extends StatefulWidget {
   final Employee employee;
 
-  const EmployeeDetailScreen({
+  const AttendanceDetailScreen({
     Key? key,
     required this.employee,
   }) : super(key: key);
 
   @override
-  State<EmployeeDetailScreen> createState() => _EmployeeDetailScreenState();
+  State<AttendanceDetailScreen> createState() => _AttendanceDetailScreenState();
 }
 
-class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
+class _AttendanceDetailScreenState extends State<AttendanceDetailScreen> {
   late String currentMonth = DateFormat('MMMM yyyy').format(DateTime.now());
   List<Map<String, dynamic>> attendanceRecords = [];
   bool isLoading = true;
@@ -113,7 +113,6 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: CustomTitleText(text: widget.employee.name),
         backgroundColor: primary,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -185,7 +184,7 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
       ? (record['check_out'] ?? "-") 
       : 'Leave',
   record['status'] == 'Present' || record['status'] == 'Late',
-  _parseTotalHours(record['total_hours'] ?? "0:00:00"), // Parse total_hours
+  _parseTotalHours(record['total_hours'] ?? "0:00:00"), 
 )).toList(),
           ],
         ),
@@ -234,162 +233,38 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
     );
   }
 
-Widget _buildAttendanceDetail(
+ Widget _buildAttendanceDetail(
   String date, 
   String checkIn, 
   String checkOut, 
   bool present,
   double totalHours, 
 ) {
-  // Get a color based on the status
-  Color statusColor = present ? Colors.green : Colors.red;
-  
-  // Format the date string if needed
-  String formattedDate = date;
-  try {
-    final parsedDate = DateTime.parse(date);
-    formattedDate = DateFormat('MMM dd').format(parsedDate);
-  } catch (e) {
-    // Keep original format if parsing fails
-  }
-  
-  return Container(
+  return Card(
     margin: const EdgeInsets.only(bottom: 12),
-    decoration: BoxDecoration(
-      color: blue.withOpacity(.1),
-      borderRadius: BorderRadius.circular(10),
-       border: Border(
-      left: BorderSide(
-        color: red, // Change to any color you want
-        width: 5, // Adjust thickness if needed
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Text(date),
+              const Spacer(),
+              Text(present ? "Present" : "Absent"),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Text("Check-in: $checkIn"),
+              const Spacer(),
+              Text("Check-out: $checkOut"),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text("Total Hours: ${totalHours.toStringAsFixed(2)}"), // Display parsed hours
+        ],
       ),
-    ),
-      // boxShadow: [
-      //   BoxShadow(
-      //     color: Colors.grey.withOpacity(0.1),
-      //     spreadRadius: 1,
-      //     blurRadius: 2,
-      //     offset: const Offset(0, 1),
-      //   ),
-      // ],
-    ),
-    child: Row(
-      children: [
-        // Left colored border as a separate container
-        Container(
-          width: 5,
-          decoration: BoxDecoration(
-            color: statusColor,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(8),
-              bottomLeft: Radius.circular(8),
-            ),
-          ),
-        ),
-        // Main content
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.all(10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // Date on left side (larger)
-                    CustomTitleText10(text: formattedDate),
-                    
-                    const Spacer(),
-                    
-                    // Status chip
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        present ? "Present" : "Absent",
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: statusColor,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                
-                const SizedBox(height: 8),
-                
-                // Divider for visual separation
-                Divider(color: primary.withOpacity(.3)),
-                
-                //const SizedBox(height: 4),
-                
-                // Time details in smaller text
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Check-in time
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Check-in",
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
-                          ),
-                        ),
-                        CustomTitleText20(text: checkIn),
-                      ],
-                    ),
-                    
-                    // Check-out time
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        const Text(
-                          "Check-out",
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
-                          ),
-                        ),
-                        CustomTitleText20(text: checkOut),
-                      ],
-                    ),
-                  ],
-                ),
-                
-                const SizedBox(height: 8),
-                
-                // Total hours at the bottom
-                // Row(
-                //   children: [
-                //     const Text(
-                //       "Total Hours: ",
-                //       style: TextStyle(
-                //         fontSize: 12,
-                //         color: Colors.grey,
-                //       ),
-                //     ),
-                //     Text(
-                //       totalHours.toStringAsFixed(2),
-                //       style: TextStyle(
-                //         fontSize: 14,
-                //         fontWeight: FontWeight.w500,
-                //         color: primary,
-                //       ),
-                //     ),
-                //   ],
-                // ),
-              ],
-            ),
-          ),
-        ),
-      ],
     ),
   );
 }

@@ -47,7 +47,7 @@ class HomePageState extends State<HomePage> {
 });
 
     dashboardData =
-        DashboardService.fetchDashboardData() as Future<DashboardData>;
+        DashboardService.fetchDashboardData();
   }
 
   Future<void> _fetchProfile() async {

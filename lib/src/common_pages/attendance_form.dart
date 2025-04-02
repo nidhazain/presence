@@ -172,6 +172,78 @@ class _RequestAttendanceDialogState extends State<RequestAttendanceDialog> {
     );
   }
 
+  String? _validateCheckInTime(String? value) {
+  if (value == null || value.isEmpty) {
+    return 'Check-in time is required';
+  }
+  try {
+    final timeParts = value.split(':').map((e) => int.parse(e)).toList();
+    final selectedDate = _displayDateFormat.parse(dateController.text);
+    final DateTime checkInDateTime = DateTime(
+      selectedDate.year,
+      selectedDate.month,
+      selectedDate.day,
+      timeParts[0],
+      timeParts[1],
+    );
+    final DateTime now = DateTime.now();
+    // Only check if the selected date is today.
+    if (selectedDate.year == now.year &&
+        selectedDate.month == now.month &&
+        selectedDate.day == now.day &&
+        checkInDateTime.isAfter(now)) {
+      return 'Check-in time cannot be in the future';
+    }
+  } catch (e) {
+    return 'Invalid time format';
+  }
+  return null;
+}
+
+String? _validateCheckOutTime(String? value) {
+  if (value == null || value.isEmpty) {
+    return 'Check-out time is required';
+  }
+  try {
+    final timeParts = value.split(':').map((e) => int.parse(e)).toList();
+    final selectedDate = _displayDateFormat.parse(dateController.text);
+    final DateTime checkOutDateTime = DateTime(
+      selectedDate.year,
+      selectedDate.month,
+      selectedDate.day,
+      timeParts[0],
+      timeParts[1],
+    );
+    final DateTime now = DateTime.now();
+    // Only check if the selected date is today.
+    if (selectedDate.year == now.year &&
+        selectedDate.month == now.month &&
+        selectedDate.day == now.day &&
+        checkOutDateTime.isAfter(now)) {
+      return 'Check-out time cannot be in the future';
+    }
+    // Also ensure check-out isn't before check-in (if provided).
+    if (checkInController.text.isNotEmpty) {
+      final checkInParts =
+          checkInController.text.split(':').map((e) => int.parse(e)).toList();
+      final DateTime checkInDateTime = DateTime(
+        selectedDate.year,
+        selectedDate.month,
+        selectedDate.day,
+        checkInParts[0],
+        checkInParts[1],
+      );
+      if (checkOutDateTime.isBefore(checkInDateTime)) {
+        return 'Check-out cannot be before check-in!';
+      }
+    }
+  } catch (e) {
+    return 'Invalid time format';
+  }
+  return null;
+}
+
+
   // Add date picker field
   Widget _buildDateField() {
     return TextFormField(
@@ -206,63 +278,44 @@ class _RequestAttendanceDialogState extends State<RequestAttendanceDialog> {
     );
   }
 
-  Widget _buildTimeField(TextEditingController controller, String hintText) {
-    String? _validateCheckOutTime(String? value) {
-      if (value == null || value.isEmpty) {
-        return 'Check-out time is required';
-      }
-      if (checkInController.text.isNotEmpty) {
-        try {
-          final checkInParts = checkInController.text
-              .split(':')
-              .map((e) => int.parse(e))
-              .toList();
-          final checkOutParts =
-              value.split(':').map((e) => int.parse(e)).toList();
-
-          final checkInTime =
-              DateTime(0, 0, 0, checkInParts[0], checkInParts[1]);
-          final checkOutTime =
-              DateTime(0, 0, 0, checkOutParts[0], checkOutParts[1]);
-
-          if (checkOutTime.isBefore(checkInTime)) {
-            return 'Check-out cannot be before check-in!';
-          }
-        } catch (e) {
-          return 'Invalid time format';
-        }
-      }
-      return null;
+ Widget _buildTimeField(TextEditingController controller, String hintText) {
+  String? validator(String? value) {
+    if (controller == checkInController) {
+      return _validateCheckInTime(value);
+    } else if (controller == checkOutController) {
+      return _validateCheckOutTime(value);
+    } else {
+      return ValidationHelper.validateField(value);
     }
-
-    return TextFormField(
-      controller: controller,
-      readOnly: true,
-      validator: controller == checkOutController
-          ? _validateCheckOutTime
-          : ValidationHelper.validateField,
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: primary.withOpacity(.05),
-        contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-        border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none),
-        suffixIcon: Icon(Icons.timer_outlined, color: Colors.grey, size: 20),
-        hintText: hintText,
-      ),
-      onTap: () async {
-        TimeOfDay? pickedTime = await showTimePicker(
-            context: context, initialTime: TimeOfDay.now());
-        if (pickedTime != null) {
-          final formattedTime = formatTimeOfDayTo24Hour(pickedTime);
-          setState(() {
-            controller.text = formattedTime;
-          });
-        }
-      },
-    );
   }
+
+  return TextFormField(
+    controller: controller,
+    readOnly: true,
+    validator: validator,
+    decoration: InputDecoration(
+      filled: true,
+      fillColor: primary.withOpacity(.05),
+      contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+      border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none),
+      suffixIcon: Icon(Icons.timer_outlined, color: Colors.grey, size: 20),
+      hintText: hintText,
+    ),
+    onTap: () async {
+      TimeOfDay? pickedTime =
+          await showTimePicker(context: context, initialTime: TimeOfDay.now());
+      if (pickedTime != null) {
+        final formattedTime = formatTimeOfDayTo24Hour(pickedTime);
+        setState(() {
+          controller.text = formattedTime;
+        });
+      }
+    },
+  );
+}
+
 
   Widget _buildProofField() {
     return Column(

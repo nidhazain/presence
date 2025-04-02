@@ -69,6 +69,8 @@ class MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    print("Profile Image URL: ${_profileData?['image']}");
+
     return SafeArea(
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -120,12 +122,16 @@ class MainScreenState extends State<MainScreen> {
                   style: TextStyle(color: Colors.white70),
                 ),
                 currentAccountPicture: CircleAvatar(
-                  backgroundColor: Colors.white,
-                  backgroundImage: _profileData?['image'] != null &&
-                          _profileData!['image'].isNotEmpty
-                      ? NetworkImage(_profileData!['image'])
-                      : AssetImage('images/pro.jpg') as ImageProvider,
-                ),
+  backgroundColor: Colors.white,
+  backgroundImage: _profileData?['image'] != null &&
+          _profileData!['image'].isNotEmpty
+      ? NetworkImage(_profileData!['image'])
+      : AssetImage('images/pro.jpg') as ImageProvider,
+  onBackgroundImageError: (_, __) {
+    print("⚠️ Failed to load profile image, falling back to default.");
+  },
+),
+
               ),
               _buildDrawerItem(Icons.home_outlined, "Home", 0),
               _buildDrawerItem(Icons.person_outline, "Profile", 4),

@@ -70,12 +70,12 @@ class _EmployeeOvertimeDetailPageState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // appBar: AppBar(
-      //   backgroundColor: primary,
-      //   title: CustomTitleText(text: 'Overtime History'),
-      //   iconTheme: const IconThemeData(color: Colors.white),
-      //   elevation: 0,
-      // ),
+      appBar: AppBar(
+        backgroundColor: primary,
+        title: CustomTitleText(text: 'Overtime History'),
+        iconTheme: const IconThemeData(color: Colors.white),
+        elevation: 0,
+      ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : errorMessage.isNotEmpty
@@ -83,14 +83,18 @@ class _EmployeeOvertimeDetailPageState
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.error_outline, color: Colors.red, size: 60),
+                      const Icon(Icons.error_outline,
+                          color: Colors.red, size: 60),
                       const SizedBox(height: 16),
-                      Text(errorMessage, style: const TextStyle(color: Colors.red)),
+                      Text(errorMessage,
+                          style: const TextStyle(color: Colors.red)),
                       const SizedBox(height: 16),
                       ElevatedButton(
                         onPressed: fetchEmployeeDetail,
-                        style: ElevatedButton.styleFrom(backgroundColor: primary),
-                        child: const Text('Try Again', style: TextStyle(color: Colors.white)),
+                        style:
+                            ElevatedButton.styleFrom(backgroundColor: primary),
+                        child: const Text('Try Again',
+                            style: TextStyle(color: Colors.white)),
                       ),
                     ],
                   ),
@@ -198,18 +202,37 @@ class _EmployeeOvertimeDetailPageState
                                             padding: const EdgeInsets.all(12),
                                             decoration: BoxDecoration(
                                               color: primary.withOpacity(0.1),
-                                              borderRadius: BorderRadius.circular(12),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
                                             ),
-                                            child: const Icon(Icons.date_range, color: primary),
+                                            child: const Icon(Icons.date_range,
+                                                color: primary),
                                           ),
                                           const SizedBox(width: 16),
                                           Expanded(
-                                            child: Text(
-                                              item.date,
-                                              style: const TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w500,
-                                              ),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  item.date,
+                                                  style: const TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  item.reason,
+                                                  style: const TextStyle(
+                                                    fontSize: 14,
+                                                    color: Colors.grey,
+                                                  ),
+                                                  maxLines: 2,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                              ],
                                             ),
                                           ),
                                           Container(
@@ -219,7 +242,8 @@ class _EmployeeOvertimeDetailPageState
                                             ),
                                             decoration: BoxDecoration(
                                               color: Colors.grey.shade100,
-                                              borderRadius: BorderRadius.circular(20),
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
                                             ),
                                             child: Text(
                                               '${item.hours.toStringAsFixed(1)} hrs',

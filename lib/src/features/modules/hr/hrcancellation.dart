@@ -38,6 +38,7 @@ class _LeaveCancellationRequestListState extends State<LeaveCancellationRequestL
     try {
       await TokenService.ensureAccessToken();
      final token = await TokenService.getAccessToken();
+     print(token);
       final response = await http.get(
         Uri.parse(apiEndpoints.pendingCancellationRequests),
         headers: {
@@ -52,14 +53,14 @@ class _LeaveCancellationRequestListState extends State<LeaveCancellationRequestL
           cancellationRequests = data.map((request) {
             return {
               'id': request['id'],
-              'leaveType': request['leave_type'],
-              'startDate': request['start_date'],
-              'endDate': request['end_date'],
+              'leaveType': request['leave_type'] ?? 'Unknown',
+              'startDate': request['start_date'] ?? '',
+              'endDate': request['end_date'] ?? '',
               'reason': request['reason'] ?? 'Not specified',
-              'cancelReason': request['cancellation_reason'],
+              'cancelReason': request['cancellation_reason'] ?? 'no reason',
               'status': 'pending', 
-              'employee': request['employee'],
-              'attachmentUrl': request['attachment_url'] ?? '',
+              'employee': request['name'] ?? 'unknown' ,
+              'image': request['image'] ?? '',
               'cancellation_reason' : request['cancellation_reason']
             };
           }).toList();
@@ -98,6 +99,7 @@ class _LeaveCancellationRequestListState extends State<LeaveCancellationRequestL
       await TokenService.ensureAccessToken();
       final token = await TokenService.getAccessToken();
       final response = await http.post(
+        
         Uri.parse('${apiEndpoints.approveRejectCancellation}$leaveId/'),
         headers: {
           'Authorization': 'Bearer $token',
@@ -170,11 +172,11 @@ class _LeaveCancellationRequestListState extends State<LeaveCancellationRequestL
                 textfield(data: request['reason']),
                 CustomTitleText10(text: "Cancellation Reason:"),
                 textfield(data: request['cancellation_reason']),
-                if (request['attachmentUrl'] != null && request['attachmentUrl'].isNotEmpty) ...[
+                if (request['image'] != null && request['image'].isNotEmpty) ...[
                   CustomTitleText10(text: "Attachment:"),
                   SizedBox(height: 10),
                   GestureDetector(
-                    onTap: () => _showFullSizeImage(context, request['attachmentUrl']),
+                    onTap: () => _showFullSizeImage(context, request['image']),
                     child: Container(
                       decoration: BoxDecoration(
                         border: Border.all(color: Colors.grey.shade300),
@@ -183,7 +185,7 @@ class _LeaveCancellationRequestListState extends State<LeaveCancellationRequestL
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(8),
                         child: Image.network(
-                          request['attachmentUrl'],
+                          request['image'],
                           height: 200,
                           width: double.infinity,
                           fit: BoxFit.cover,

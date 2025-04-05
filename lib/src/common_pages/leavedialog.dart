@@ -85,11 +85,6 @@ void _showFullSizeImage(BuildContext context, String imageUrl) {
 }
 
 void showLeaveDetailsDialog(BuildContext context, Leave leave) {
-    debugPrint('Leave object full details: ${leave.toJson()}');
-  debugPrint('Cancellation reason from object: ${leave.cancellationReason}');
-  debugPrint('Cancellation reason is null? ${leave.cancellationReason == null}');
-  debugPrint('Cancellation reason is empty? ${leave.cancellationReason?.isEmpty ?? true}');
-  debugPrint('Leave status: ${leave.status}');
 
   final String leaveDays = _calculateLeaveDays(leave.startDate, leave.endDate);
 
@@ -190,11 +185,10 @@ void showLeaveDetailsDialog(BuildContext context, Leave leave) {
                                       ),
                                       const SizedBox(height: 8),
                                       const Text('Failed to load image'),
-                                      if (error != null)
-                                        Text(
-                                          error.toString(),
-                                          style: const TextStyle(fontSize: 10),
-                                        ),
+                                      Text(
+                                        error.toString(),
+                                        style: const TextStyle(fontSize: 10),
+                                      ),
                                     ],
                                   ),
                                 );

@@ -73,17 +73,18 @@ class _RequestAttendanceDialogState extends State<RequestAttendanceDialog> {
   }
 
   Future<void> _submitAttendanceRequest() async {
-    if (_formKey.currentState?.validate() ?? false) {
+  if (_formKey.currentState?.validate() ?? false) {
+    try {
       Map<String, dynamic> requestData = {
         'date': getBackendFormattedDate(), 
         'check_in': checkInController.text,
         'check_out': checkOutController.text,
         'work_type': workTypeController.text,
       };
+      
       if (_selectedProofType.toLowerCase() == 'location') {
         requestData['location'] = locationController.text;
-      } else if (_selectedProofType.toLowerCase() == 'image' &&
-          _imageFile != null) {
+      } else if (_selectedProofType.toLowerCase() == 'image' && _imageFile != null) {
         requestData['image'] = _imageFile!.path;
       }
 
@@ -92,19 +93,51 @@ class _RequestAttendanceDialogState extends State<RequestAttendanceDialog> {
         imageFile: _imageFile,
       );
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(success
-                ? 'Submitted successfully'
-                : 'Failed to submit attendance request')),
-      );
-
       if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Submitted successfully')),
+        );
         _clearForm();
         Navigator.of(context).pop();
       }
+    } catch (e) {
+      // Handle backend validation errors
+      String errorMessage = 'Failed to submit attendance request';
+      
+      if (e is Map<String, dynamic>) {
+        // Handle structured error response from backend
+        if (e.containsKey('error')) {
+          errorMessage = e['error'].toString();
+        } else if (e.containsKey('detail')) {
+          errorMessage = e['detail'].toString();
+        }
+      } else if (e is String) {
+        errorMessage = e;
+      } else if (e.toString().contains('attendance_exists')) {
+        errorMessage = 'Attendance already recorded for this date. Request denied.';
+      } else if (e.toString().contains('duplicate_request')) {
+        errorMessage = 'You already have a pending attendance request for this date.';
+      } else if (e.toString().contains('date_too_old')) {
+        errorMessage = 'Cannot request attendance for dates older than 30 days.';
+      }
+
+      // Show error dialog
+      await showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('Error'),
+          content: Text(errorMessage),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('OK'),
+            ),
+          ],
+        ),
+      );
     }
   }
+}
 
   String formatTimeOfDayTo24Hour(TimeOfDay tod) {
     final now = DateTime.now();

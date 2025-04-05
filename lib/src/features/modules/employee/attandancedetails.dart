@@ -1,14 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:presence/src/common_widget/text_tile.dart';
 import 'package:presence/src/constants/colors.dart';
 import 'package:presence/src/features/api/common/tokenservice.dart';
 import 'package:presence/src/features/api/url.dart';
-import 'package:presence/src/features/modules/hr/hrattendancestats.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+class Employee {
+  final String name;
+  final int workDays;
+  final int approvedLeaves;
+  final String totalOvertime;
+  // Add other properties as needed
+
+  Employee({
+    required this.name,
+    required this.workDays,
+    required this.approvedLeaves,
+    required this.totalOvertime,
+  });
+}
+
 class AttendanceDetailScreen extends StatefulWidget {
+  // No longer strictly required since the backend now uses request.user,
+  // but kept here if needed elsewhere.
   final Employee employee;
 
   const AttendanceDetailScreen({
@@ -23,6 +38,8 @@ class AttendanceDetailScreen extends StatefulWidget {
 class _AttendanceDetailScreenState extends State<AttendanceDetailScreen> {
   late String currentMonth = DateFormat('MMMM yyyy').format(DateTime.now());
   List<Map<String, dynamic>> attendanceRecords = [];
+  Map<String, dynamic> employeeDetails = {};
+  Map<String, dynamic> attendanceSummary = {};
   bool isLoading = true;
   String errorMessage = '';
 
@@ -39,8 +56,7 @@ class _AttendanceDetailScreenState extends State<AttendanceDetailScreen> {
     });
 
     try {
-      final url =
-          Uri.parse('$BASE_URL/employee/${widget.employee.empId}/attendance/');
+      final url = Uri.parse('$BASE_URL/empattendoverview/');
       await TokenService.ensureAccessToken();
       String? token = await TokenService.getAccessToken();
 
@@ -54,218 +70,225 @@ class _AttendanceDetailScreenState extends State<AttendanceDetailScreen> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-
-        // Check if 'attendance_records' exists (not 'attendance')
-        if (data['attendance_records'] != null) {
-          setState(() {
-            attendanceRecords = List<Map<String, dynamic>>.from(
-                data['attendance_records']); // Updated key
-            isLoading = false;
-          });
-        } else {
-          setState(() {
-            attendanceRecords = [];
-            isLoading = false;
-            errorMessage = "No attendance records found";
-          });
-        }
+        setState(() {
+          employeeDetails = data['employee_details'] ?? {};
+          attendanceRecords =
+              List<Map<String, dynamic>>.from(data['attendance_records'] ?? []);
+          attendanceSummary = data['attendance_summary'] ?? {};
+          isLoading = false;
+        });
       } else {
-        throw Exception(
-            'Failed to load attendance details (Status: ${response.statusCode})');
+        throw Exception('Failed to load attendance details');
       }
     } catch (e) {
       setState(() {
         isLoading = false;
-        errorMessage = 'Error: ${e.toString()}';
+        errorMessage = 'Error loading data. Please try again.';
       });
     }
   }
 
-  double _parseTotalHours(String totalHours) {
-  try {
-    if (totalHours.contains("day")) {
-      // Handle cases like "-1 day, 15:00:00"
-      final parts = totalHours.split(",");
-      final dayPart = parts[0].trim(); // "-1 day"
-      final timePart = parts[1].trim(); // "15:00:00"
-
-      final days = double.parse(dayPart.split(" ")[0]); // -1
-      final timeComponents = timePart.split(":");
-      final hours = double.parse(timeComponents[0]); // 15
-      final minutes = double.parse(timeComponents[1]); // 00
-
-      return (days * 24) + hours + (minutes / 60);
-    } else {
-      // Handle cases like "9:00:00"
-      final components = totalHours.split(":");
-      final hours = double.parse(components[0]); // 9
-      final minutes = double.parse(components[1]); // 00
-
-      return hours + (minutes / 60);
-    }
-  } catch (e) {
-    return 0.0; // Fallback if parsing fails
+  String _formatOvertime(dynamic overtime) {
+    if (overtime == 0 || overtime == null) return '-';
+    return '$overtime hr${(overtime is num && overtime > 1) ? 's' : ''}';
   }
-}
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
+        title: Text('Attendance', style: TextStyle(color: Colors.white)),
         backgroundColor: primary,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: Colors.white),
+        elevation: 0,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const CustomTitleText8(text: 'Attendance Summary'),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: CustomTitleText20(text: currentMonth),
+      body: isLoading
+          ? Center(child: CircularProgressIndicator())
+          : errorMessage.isNotEmpty
+              ? Center(child: Text(errorMessage))
+              : SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Attendance Summary',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            SizedBox(height: 12),
+                            Row(
+                              children: [
+                                _buildSummaryCard(
+                                  'Present',
+                                  attendanceSummary['present']?.toString() ??
+                                      '0',
+                                  Colors.green,
+                                ),
+                                _buildSummaryCard(
+                                  'Absent',
+                                  attendanceSummary['absent']?.toString() ??
+                                      '0',
+                                  Colors.red,
+                                ),
+                                _buildSummaryCard(
+                                  'Late',
+                                  attendanceSummary['late']?.toString() ?? '0',
+                                  Colors.amber,
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 24),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Recent Attendance',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(height: 12),
+                                // Instead of mapping, use ListView.separated:
+                                ListView.separated(
+                                  shrinkWrap: true,
+                                  physics: NeverScrollableScrollPhysics(),
+                                  itemCount: attendanceRecords.length,
+                                  separatorBuilder: (context, index) =>
+                                      SizedBox(
+                                          height:
+                                              10), // spacing between each tile
+                                  itemBuilder: (context, index) =>
+                                      _buildAttendanceItem(
+                                          attendanceRecords[index]),
+                                ),
+                              ],
+                            )
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ],
-            ),
-            Card(
-              color: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: primary.withOpacity(.5))),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 16),
-                    _buildSummaryRow(
-                        'Work Days', '${widget.employee.workDays} days'),
-                    _buildSummaryRow(
-                        'Leaves',
-                        widget.employee.approvedLeaves == 0
-                            ? '-'
-                            : '${widget.employee.approvedLeaves} days'),
-                    _buildSummaryRow('Overtime',
-                        _formatOvertime(widget.employee.totalOvertime)),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Recent Attendance',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 12),
-            if (isLoading)
-              const Center(child: CircularProgressIndicator())
-            else if (errorMessage.isNotEmpty)
+    );
+  }
+
+  Widget _buildSummaryCard(String title, String value, Color color) {
+    return Expanded(
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Container(
+          padding: EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            children: [
               Text(
-                errorMessage,
-                style: const TextStyle(color: Colors.red),
-              )
-            else if (attendanceRecords.isEmpty)
-              const Text('No attendance records found')
-            else
-              ...attendanceRecords.map((record) => _buildAttendanceDetail(
-  record['date'] ?? "No date",
-  record['status'] == 'Present' || record['status'] == 'Late' 
-      ? (record['check_in'] ?? "-") 
-      : 'Leave',
-  record['status'] == 'Present' || record['status'] == 'Late'
-      ? (record['check_out'] ?? "-") 
-      : 'Leave',
-  record['status'] == 'Present' || record['status'] == 'Late',
-  _parseTotalHours(record['total_hours'] ?? "0:00:00"), 
-)).toList(),
-          ],
+                value,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
-    
   }
 
-  String _formatOvertime(String overtime) {
-    if (overtime == '0:00' || overtime.isEmpty) return '-';
+  Widget _buildAttendanceItem(Map<String, dynamic> record) {
+    final bool isPresent =
+        record['status'] == 'Present' || record['status'] == 'Late';
+    final Color statusColor = isPresent ? Colors.green : Colors.red;
 
-    try {
-      final parts = overtime.split(':');
-      if (parts.length >= 2) {
-        final hours = int.tryParse(parts[0]) ?? 0;
-        if (hours > 0) return '$hours hr${hours > 1 ? 's' : ''}';
-      }
-      return '-';
-    } catch (e) {
-      return '-';
-    }
-  }
-
-  Widget _buildSummaryRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.grey[700],
-              fontSize: 15,
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        border: Border(
+          left: BorderSide(
+            color: Colors.red,
+            width: 3,
+          ),
+        ),
+      ),
+      clipBehavior: Clip.hardEdge, // Ensures the borderRadius is respected
+      child: IntrinsicHeight(
+        // Makes the Container shrink to fit the Card
+        child: Card(
+          margin: EdgeInsets.zero, // Remove margin to avoid extra spacing
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: ListTile(
+            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            title: Row(
+              children: [
+                Text(
+                  record['date'] ?? 'No date',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Spacer(),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(
+                    record['status'] ?? 'Unknown',
+                    style: TextStyle(
+                      color: statusColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Check-In: ${record['check_in'] ?? '-'}'),
+                    Text('Check-Out: ${record['check_out'] ?? '-'}'),
+                  ],
+                ),
+                SizedBox(height: 4),
+                // Row(
+                //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                //   children: [
+                //     Text(
+                //         'Hours: ${record['total_hours']?.toString().split('.').first ?? '0'}'),
+                //     Text('OT: ${_formatOvertime(record['total_overtime'])}'),
+                //   ],
+                // ),
+              ],
             ),
           ),
-          Text(
-            value,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 15,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
-
- Widget _buildAttendanceDetail(
-  String date, 
-  String checkIn, 
-  String checkOut, 
-  bool present,
-  double totalHours, 
-) {
-  return Card(
-    margin: const EdgeInsets.only(bottom: 12),
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Text(date),
-              const Spacer(),
-              Text(present ? "Present" : "Absent"),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Text("Check-in: $checkIn"),
-              const Spacer(),
-              Text("Check-out: $checkOut"),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text("Total Hours: ${totalHours.toStringAsFixed(2)}"), // Display parsed hours
-        ],
-      ),
-    ),
-  );
-}
 }

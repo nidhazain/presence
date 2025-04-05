@@ -22,8 +22,8 @@ class _ShiftCalendarScreenState extends State<ShiftCalendarScreen> {
   Map<String, dynamic>? _selectedDayShiftData;
   List<dynamic> _colleagues = [];
   bool _isHoliday = false;
-  Map<DateTime, String> _shiftDataMap = {}; // Stores shift types for all dates
-  Map<DateTime, List<dynamic>> _colleaguesMap = {}; // Stores colleagues for all dates
+  Map<DateTime, String> _shiftDataMap = {}; 
+  Map<DateTime, List<dynamic>> _colleaguesMap = {}; 
 
   final Map<DateTime, List<String>> holidays = {
     DateTime(2025, 1, 26): ['Republic Day'],
@@ -49,10 +49,8 @@ class _ShiftCalendarScreenState extends State<ShiftCalendarScreen> {
   }
 
   Future<void> _fetchInitialData() async {
-    // 1. Fetch today's shift and colleagues first
     await _fetchShiftDataForDay(_selectedDay!);
     
-    // 2. Then fetch shifts for the current month
     final firstDay = DateTime(_focusedDay.year, _focusedDay.month, 1);
     final lastDay = DateTime(_focusedDay.year, _focusedDay.month + 1, 0);
     await _fetchShiftsForRange(firstDay, lastDay);
@@ -96,12 +94,7 @@ class _ShiftCalendarScreenState extends State<ShiftCalendarScreen> {
     final String formattedDate = _formatDate(day);
 
     try {
-      final String url;
-      if (isSameDay(day, DateTime.now())) {
-        url = '$BASE_URL/employee-shifts/';
-      } else {
-        url = '$BASE_URL/shift-colleagues/$formattedDate/';
-      }
+      final url = '$BASE_URL/shift-colleagues/$formattedDate/';
 
       final response = await http.get(
         Uri.parse(url),
@@ -307,7 +300,6 @@ class _ShiftCalendarScreenState extends State<ShiftCalendarScreen> {
   }
 
   Widget _buildSelectedDayCard() {
-    // Get data from both sources
     final normalizedDate = _normalizeDate(_selectedDay!);
     final String currentShift = _selectedDayShiftData?['shift_type']?.toString() ?? 
                               _shiftDataMap[normalizedDate] ?? 
@@ -336,15 +328,13 @@ class _ShiftCalendarScreenState extends State<ShiftCalendarScreen> {
               ListTile(
                 title: Text(
                   isToday
-                      ? "Today's Shift: $currentShift"
+                      ? "Today's: $currentShift"
                       : "$currentShift shift",
                   style: const TextStyle(
                       fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 subtitle: Text(
-                  isToday
-                      ? "Today"
-                      : _selectedDay!.toLocal().toString().split(' ')[0],
+                   _selectedDay!.toLocal().toString().split(' ')[0],
                   style: const TextStyle(fontSize: 14),
                 ),
               ),

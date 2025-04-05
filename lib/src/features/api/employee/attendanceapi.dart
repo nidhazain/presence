@@ -10,42 +10,52 @@ import 'package:presence/src/features/modules/employee/attendancestats.dart';
 class AttendanceService {
   static final _storage = FlutterSecureStorage();
 
-  static Future<bool> submitAttendanceRequest(Map<String, dynamic> requestData,
-      {File? imageFile}) async {
-    try {
-      await TokenService.ensureAccessToken();
-      String? token = await _storage.read(key: 'access');
-      if (token == null) throw Exception('Unauthorized: No token found');
+  static Future<bool> submitAttendanceRequest(
+  Map<String, dynamic> requestData,
+  {File? imageFile}
+) async {
+  try {
+    await TokenService.ensureAccessToken();
+    String? token = await _storage.read(key: 'access');
+    if (token == null) throw Exception('Unauthorized: No token found');
 
-      var uri = Uri.parse('$BASE_URL/empattendance/request/');
-      var request = http.MultipartRequest('POST', uri);
+    var uri = Uri.parse('$BASE_URL/empattendance/request/');
+    var request = http.MultipartRequest('POST', uri);
 
-      request.headers.addAll({
-        'Authorization': 'Bearer $token',
-      });
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+    });
 
-      requestData.forEach((key, value) {
-        request.fields[key] = value.toString();
-      });
+    requestData.forEach((key, value) {
+      request.fields[key] = value.toString();
+    });
 
-      if (imageFile != null) {
-        request.files
-            .add(await http.MultipartFile.fromPath('image', imageFile.path));
-      }
-
-
-      var response = await request.send();
-
-      return response.statusCode == 201;
-    } catch (e) {
-      print('Error submitting attendance request: $e');
-      return false;
+    if (imageFile != null) {
+      request.files.add(
+        await http.MultipartFile.fromPath('image', imageFile.path)
+      );
     }
+
+    var response = await request.send();
+    final responseBody = await response.stream.bytesToString();
+
+    if (response.statusCode == 400 || response.statusCode == 403) {
+      // Parse the error response from backend
+      final errorResponse = json.decode(responseBody);
+      throw errorResponse; // This will be caught in the calling function
+    }
+
+    return response.statusCode == 201;
+  } catch (e) {
+    print('Error submitting attendance request: $e');
+    rethrow; // Changed from return false to rethrow to propagate the error
   }
+}
 
   Future<List<Attendance>> fetchAttendanceRecords() async {
     await TokenService.ensureAccessToken();
     final token = await TokenService.getAccessToken();
+    print(token);
 
     final response = await http.get(
       Uri.parse('$BASE_URL/empattendance/'),

@@ -206,7 +206,7 @@ Future<void> _fetchShiftColleagues() async {
                         final values = [
                           data.checkIn,
                           data.checkOut,
-                          data.late ? "Late" : "On Time",
+                          data.late ? "Late" : "Not Late",
                           data.overtimeToday,
                         ];
                         return CustomCard(
@@ -287,7 +287,7 @@ Future<void> _fetchShiftColleagues() async {
                     // Shift card using fetched shift data
                     GestureDetector(
                       onTap: _showColleaguesPopup,
-                      child: CustomCard2(
+                      child: CustomCard12(
                         title: shiftTitle,
                         subtitle: shiftSubtitle,
                       ),

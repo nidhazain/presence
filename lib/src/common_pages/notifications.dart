@@ -17,7 +17,7 @@ class Notification {
     required this.id,
     required this.message,
     required this.timestamp,
-    this.isRead = false,
+    required this.isRead,
   });
 
   factory Notification.fromJson(Map<String, dynamic> json) {
@@ -50,19 +50,10 @@ class _NotificationPageState extends State<NotificationPage> {
 
   Future<void> _fetchNotifications() async {
     try {
-
-await TokenService.ensureAccessToken();
+      await TokenService.ensureAccessToken();
       final token = TokenService.getAccessToken();
-      if (token == null) {
-        setState(() {
-          _isLoading = false;
-          _errorMessage = 'Authentication required';
-        });
-        return;
-      }
-
       final response = await http.get(
-        Uri.parse('$BASE_URL/leavenotification/'),
+        Uri.parse('$BASE_URL/leavenotification/'), // Updated endpoint
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -95,9 +86,8 @@ await TokenService.ensureAccessToken();
     try {
       await TokenService.ensureAccessToken();
       final token = TokenService.getAccessToken();
-
       final response = await http.patch(
-        Uri.parse('$BASE_URL/leavenotification/$notificationId/mark_as_read/'),
+        Uri.parse('$BASE_URL/notifications/$notificationId/mark_as_read/'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -113,7 +103,7 @@ await TokenService.ensureAccessToken();
         });
       }
     } catch (e) {
-      // Handle error silently or show a snackbar
+      print(e);
     }
   }
 
@@ -240,14 +230,14 @@ await TokenService.ensureAccessToken();
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: CustomTitleText(text: 'Notification'),
+        title: CustomTitleText(text: 'Notifications'),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
             Navigator.pop(context);
           },
         ),
-        iconTheme: IconThemeData(color: Colors.white),
+        iconTheme: const IconThemeData(color: Colors.white),
         backgroundColor: primary,
       ),
       body: _isLoading

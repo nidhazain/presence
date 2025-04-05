@@ -74,7 +74,6 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
       DateTime dt = DateFormat("HH:mm:ss").parse(time);
       return DateFormat("HH:mm").format(dt);
     } catch (e) {
-      // If parsing fails, return original time string
       return time;
     }
   }

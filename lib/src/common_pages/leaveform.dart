@@ -143,7 +143,8 @@ class _LeaveFormState extends State<LeaveForm> {
                 children: [
                   Icon(Icons.image, size: 50, color: Colors.grey),
                   SizedBox(height: 8),
-                  Text('No image selected', style: TextStyle(color: Colors.grey)),
+                  Text('No image selected',
+                      style: TextStyle(color: Colors.grey)),
                 ],
               ),
             )
@@ -250,17 +251,20 @@ class _LeaveFormState extends State<LeaveForm> {
         token: token,
         startDate: _startDateController.text,
         endDate: _endDateController.text,
-        leaveType: _selectedLeaveType != null ? _selectedLeaveType!["id"].toString() : "",
+        leaveType: _selectedLeaveType != null
+            ? _selectedLeaveType!["id"].toString()
+            : "",
         reason: _reasonController.text,
         image: _selectedImage,
       );
       if (mounted) {
         setState(() => _isSubmitting = false);
       }
-      
+
       if (response.containsKey('error')) {
         // Check for the specific validation message from the backend.
-        if (response['error'] == 'You already have a leave request for this date range!') {
+        if (response['error'] ==
+            'You already have a leave request for this date range!') {
           // Show a friendly alert dialog.
           if (mounted) {
             showDialog(
@@ -303,8 +307,10 @@ class _LeaveFormState extends State<LeaveForm> {
       return null;
     }
     try {
-      DateTime startDate = DateFormat('yyyy-MM-dd').parse(_startDateController.text);
-      DateTime endDate = DateFormat('yyyy-MM-dd').parse(_endDateController.text);
+      DateTime startDate =
+          DateFormat('yyyy-MM-dd').parse(_startDateController.text);
+      DateTime endDate =
+          DateFormat('yyyy-MM-dd').parse(_endDateController.text);
       if (endDate.isBefore(startDate)) return null;
       return endDate.difference(startDate).inDays + 1;
     } catch (e) {
@@ -358,9 +364,11 @@ class _LeaveFormState extends State<LeaveForm> {
         if (baseValidation != null) {
           return baseValidation;
         }
-        if (controller == _endDateController && _startDateController.text.isNotEmpty) {
+        if (controller == _endDateController &&
+            _startDateController.text.isNotEmpty) {
           try {
-            DateTime startDate = DateFormat('yyyy-MM-dd').parse(_startDateController.text);
+            DateTime startDate =
+                DateFormat('yyyy-MM-dd').parse(_startDateController.text);
             DateTime endDate = DateFormat('yyyy-MM-dd').parse(value!);
             if (endDate.isBefore(startDate)) {
               return 'End date cannot be before start date';
@@ -463,7 +471,8 @@ class _LeaveFormState extends State<LeaveForm> {
                 ElevatedButton.icon(
                   onPressed: _showImageSourceDialog,
                   icon: Icon(Icons.add_a_photo),
-                  label: Text(_selectedImage == null ? 'Add Image' : 'Change Image'),
+                  label: Text(
+                      _selectedImage == null ? 'Add Image' : 'Change Image'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primary,
                     foregroundColor: Colors.white,

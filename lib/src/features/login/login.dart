@@ -184,20 +184,20 @@ class LoginScreenState extends State<LoginScreen> {
                               validator: ValidationHelper.validateField,
                             ),
                             SizedBox(height: screenHeight * 0.01),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (_) =>
-                                              ForgetPasswordScreen()));
-                                },
-                                child:
-                                    CustomTitleText11(text: 'Forgot password?'),
-                              ),
-                            ),
+                            // Align(
+                            //   alignment: Alignment.centerRight,
+                            //   child: GestureDetector(
+                            //     onTap: () {
+                            //       Navigator.push(
+                            //           context,
+                            //           MaterialPageRoute(
+                            //               builder: (_) =>
+                            //                   ForgetPasswordScreen()));
+                            //     },
+                            //     child:
+                            //         CustomTitleText11(text: 'Forgot password?'),
+                            //   ),
+                            // ),
                             SizedBox(height: screenHeight * 0.01),
 
                             // Bloc Consumer for handling login process

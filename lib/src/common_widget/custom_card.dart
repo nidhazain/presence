@@ -360,6 +360,8 @@ class CustomCard8 extends StatelessWidget {
 
 }
 
+
+
 class CustomCard9 extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -368,26 +370,43 @@ class CustomCard9 extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        //border: Border.all(color: blue),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: pink),
-        color: pink.withOpacity(.1),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          CustomTitleText10(text: title),
-          CustomTitleText9(text: subtitle)
-        ],
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Container(
+          width: constraints.maxWidth, // Adapts to parent widget
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: Colors.pink),
+            color: Colors.pink.withOpacity(0.1),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 5),
+              Text(
+                subtitle,
+                style: TextStyle(fontSize: 14, color: Colors.black54),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
-
 }
+
 
 class CustomCard10 extends StatelessWidget {
   final String title;
@@ -424,4 +443,71 @@ class CustomCard10 extends StatelessWidget {
     );
   }
 
+}
+
+class CustomCard12 extends StatelessWidget {
+  final String title;
+  final String subtitle;
+
+  const CustomCard12({
+    super.key,
+    required this.title,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        border: Border.all(color: blue, width: 2),
+        borderRadius: BorderRadius.circular(20),
+        color: blue.withOpacity(.1),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth < 500) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CustomTitleText8(text: title),
+                const SizedBox(height: 8),
+                CustomTitleText7(text: subtitle),
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(50),
+                      border: Border.all(color: primary),
+                    ),
+                    child: const Text('View Colleagues'),
+                  ),
+                ),
+              ],
+            );
+          } else {
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(child: CustomTitleText8(text: title)),
+                const SizedBox(width: 10),
+                Expanded(child: CustomTitleText7(text: subtitle)),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(50),
+                    border: Border.all(color: primary),
+                  ),
+                  child: const Text('View Colleagues'),
+                ),
+              ],
+            );
+          }
+        },
+      ),
+    );
+  }
 }

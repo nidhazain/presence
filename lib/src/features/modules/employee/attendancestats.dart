@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:presence/src/common_pages/attendance_form.dart';
@@ -5,6 +7,8 @@ import 'package:presence/src/common_widget/submitbutton.dart';
 import 'package:presence/src/common_widget/text_tile.dart';
 import 'package:presence/src/constants/colors.dart';
 import 'package:presence/src/features/api/api.dart';
+import 'package:presence/src/features/api/url.dart';
+import 'package:presence/src/features/modules/employee/attandancedetails.dart';
 
 class Attendancestats extends StatefulWidget {
   const Attendancestats({super.key});
@@ -15,39 +19,16 @@ class Attendancestats extends StatefulWidget {
 
 class _AttendancestatsState extends State<Attendancestats> {
   int? touchedIndex;
-
-  List<Map<String, dynamic>> attendanceData = []; // Data for selected month
-
+  List<Map<String, dynamic>> attendanceData = [];
   List<String> months = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December'
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
   ];
-
-  String selectedMonth = DateTime.now().month == 0
-      ? 'January'
+  String selectedMonth = DateTime.now().month == 0 
+      ? 'January' 
       : [
-          'January',
-          'February',
-          'March',
-          'April',
-          'May',
-          'June',
-          'July',
-          'August',
-          'September',
-          'October',
-          'November',
-          'December'
+          'January', 'February', 'March', 'April', 'May', 'June',
+          'July', 'August', 'September', 'October', 'November', 'December'
         ][DateTime.now().month - 1];
 
   @override
@@ -72,21 +53,92 @@ class _AttendancestatsState extends State<Attendancestats> {
       });
     } else {
       setState(() {
-        attendanceData = []; // Reset data if no data is found
+        attendanceData = [];
       });
     }
   }
 
   void _fetchAttendanceData() async {
-    await loadAttendanceStats(selectedMonth); // Fetch data when initialized
+    await loadAttendanceStats(selectedMonth);
   }
 
-  double get totalValue =>
-      attendanceData.fold(0, (sum, item) => sum + item['value']);
+  double get totalValue => attendanceData.fold(0, (sum, item) => sum + item['value']);
 
   String getPercentage(double value) {
-    return ((value / totalValue) * 100).toStringAsFixed(1);
+    return totalValue == 0 ? '0.0' : ((value / totalValue) * 100).toStringAsFixed(1);
   }
+
+  Future<Map<String, dynamic>> _fetchEmployeeData() async {
+    try {
+      final url = Uri.parse('$BASE_URL/empattendoverview/');
+      await TokenService.ensureAccessToken();
+      String? token = await TokenService.getAccessToken();
+
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to load employee data (Status: ${response.statusCode})');
+      }
+    } catch (e) {
+      throw Exception('Error fetching employee data: ${e.toString()}');
+    }
+  }
+
+  void _navigateToDetailScreen() async {
+  // Add debug print to confirm the method is called
+  print("Navigation initiated"); 
+  
+  try {
+    // Get the NavigatorState from the root context
+    NavigatorState? navigator = Navigator.of(context);
+    if (navigator == null) {
+      print("Navigator is null - context issue");
+      return;
+    }
+
+    // Show loading screen immediately
+    navigator.push(
+      MaterialPageRoute(
+        builder: (_) => Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        ),
+      ),
+    );
+
+    // Fetch data
+    print("Fetching employee details...");
+    final employeeData = await _fetchEmployeeData();
+    print("Employee details fetched");
+
+    // Replace loading screen with actual content
+    navigator.pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => AttendanceDetailScreen(
+          employee: Employee(
+            name: employeeData['employee_details']['name'] ?? 'N/A',
+            workDays: employeeData['attendance_summary']['total']?.toInt() ?? 0,
+            approvedLeaves: employeeData['approved_leaves']?.toInt() ?? 0,
+            totalOvertime: employeeData['total_overtime']?.toString() ?? '0',
+          ),
+        ),
+      ),
+    );
+  } catch (e) {
+    print("Navigation error: $e");
+    Navigator.of(context).pop(); // Remove loading screen if still present
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Failed to navigate: ${e.toString()}")),
+    );
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -104,8 +156,7 @@ class _AttendancestatsState extends State<Attendancestats> {
               children: [
                 Expanded(
                   flex: 3,
-                  child: CustomTitleText8(
-                      text: 'Monthly Attendance Statistics'),
+                  child: CustomTitleText8(text: 'Monthly Attendance Statistics'),
                 ),
                 const SizedBox(width: 8),
                 Container(
@@ -118,31 +169,20 @@ class _AttendancestatsState extends State<Attendancestats> {
                     child: DropdownButton<String>(
                       value: selectedMonth,
                       icon: const Icon(Icons.keyboard_arrow_down, size: 14),
-                      elevation: 2,
-                      isDense: true,
-                      isExpanded: true,
-                      menuMaxHeight: 300,
-                      style: const TextStyle(
-                        color: Colors.black87,
-                        fontSize: 12,
-                      ),
                       onChanged: (String? newValue) {
                         if (newValue != null && newValue != selectedMonth) {
                           setState(() {
-                            selectedMonth =
-                                newValue; // Update the selected month
+                            selectedMonth = newValue;
                           });
-                          _fetchAttendanceData(); // Fetch new data when month changes
+                          _fetchAttendanceData();
                         }
                       },
-                      items:
-                          months.map<DropdownMenuItem<String>>((String month) {
+                      items: months.map<DropdownMenuItem<String>>((String month) {
                         String shortMonth = month.substring(0, 3);
                         return DropdownMenuItem<String>(
                           value: month,
                           child: Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 6.0),
+                            padding: const EdgeInsets.symmetric(horizontal: 6.0),
                             child: Text(shortMonth),
                           ),
                         );
@@ -153,7 +193,6 @@ class _AttendancestatsState extends State<Attendancestats> {
               ],
             ),
             SizedBox(height: screenHeight * 0.04),
-            // Check if attendanceData is empty, display a message if no data is found
             attendanceData.isEmpty
                 ? Center(
                     child: Text(
@@ -163,27 +202,23 @@ class _AttendancestatsState extends State<Attendancestats> {
                   )
                 : Column(
                     children: [
-                      // Enhanced Pie Chart and Legend
                       AspectRatio(
                         aspectRatio: 1.3,
                         child: Stack(
                           alignment: Alignment.center,
                           children: [
                             GestureDetector(
+                              behavior: HitTestBehavior.opaque, 
+                              onTap: _navigateToDetailScreen,
                               child: PieChart(
                                 PieChartData(
                                   pieTouchData: PieTouchData(
-                                    touchCallback:
-                                        (FlTouchEvent event, pieTouchResponse) {
-                                      // Check if widget is still mounted before calling setState
+                                    touchCallback: (FlTouchEvent event, pieTouchResponse) {
                                       if (!mounted) return;
                                       if (!event.isInterestedForInteractions ||
                                           pieTouchResponse == null ||
-                                          pieTouchResponse.touchedSection ==
-                                              null) {
-                                        setState(() {
-                                          touchedIndex = -1;
-                                        });
+                                          pieTouchResponse.touchedSection == null) {
+                                        setState(() => touchedIndex = -1);
                                         return;
                                       }
                                       setState(() {
@@ -196,11 +231,11 @@ class _AttendancestatsState extends State<Attendancestats> {
                                   borderData: FlBorderData(show: false),
                                   sectionsSpace: 2,
                                   centerSpaceRadius: screenWidth * 0.15,
-                                  sections: List.generate(attendanceData.length,
-                                      (index) {
+                                  sections: List.generate(attendanceData.length, (index) {
                                     final data = attendanceData[index];
-                                    final double percentValue =
-                                        (data['value'] / totalValue) * 100;
+                                    final double percentValue = totalValue == 0 
+                                        ? 0 
+                                        : (data['value'] / totalValue) * 100;
                                     return PieChartSectionData(
                                       value: data['value'].toDouble(),
                                       title: '${percentValue.toStringAsFixed(1)}%',
@@ -208,12 +243,7 @@ class _AttendancestatsState extends State<Attendancestats> {
                                         fontSize: 12,
                                         fontWeight: FontWeight.bold,
                                         color: Colors.white,
-                                        shadows: [
-                                          Shadow(
-                                              color: Colors.black
-                                                  .withOpacity(0.3),
-                                              blurRadius: 2)
-                                        ],
+                                        shadows: [Shadow(color: Colors.black.withOpacity(0.3), blurRadius: 2)],
                                       ),
                                       color: data['color'],
                                     );
@@ -221,40 +251,27 @@ class _AttendancestatsState extends State<Attendancestats> {
                                 ),
                               ),
                             ),
-                            // Center text showing total days
                             Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
                                   totalValue.toInt().toString(),
-                                  style: const TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                                 ),
-                                const Text(
-                                  'Total Days',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey,
-                                  ),
-                                ),
+                                const Text('Total Days', style: TextStyle(fontSize: 12, color: Colors.grey)),
                               ],
                             ),
                           ],
                         ),
                       ),
                       SizedBox(height: screenHeight * 0.01),
-                      // Enhanced Legend
                       Container(
                         padding: EdgeInsets.all(screenWidth * 0.04),
                         child: Column(
                           children: attendanceData.map((data) {
-                            final percentage =
-                                getPercentage(data['value'].toDouble());
+                            final percentage = getPercentage(data['value'].toDouble());
                             return Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 8),
+                              padding: const EdgeInsets.symmetric(vertical: 8),
                               child: Row(
                                 children: [
                                   Container(
@@ -267,19 +284,9 @@ class _AttendancestatsState extends State<Attendancestats> {
                                   ),
                                   SizedBox(width: 12),
                                   Expanded(
-                                    child: Text(
-                                      data['label'],
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
+                                    child: Text(data['label'], style: const TextStyle(fontWeight: FontWeight.w500)),
                                   ),
-                                  Text(
-                                    '${data['value']} (${percentage}%)',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
+                                  Text('${data['value']} (${percentage}%)', style: const TextStyle(fontWeight: FontWeight.bold)),
                                 ],
                               ),
                             );
@@ -288,18 +295,17 @@ class _AttendancestatsState extends State<Attendancestats> {
                       ),
                     ],
                   ),
+                  SizedBox(height: screenHeight * 0.01),
+                  CustomButton(text: 'View Attendance', onPressed: _navigateToDetailScreen),
             SizedBox(height: screenHeight * 0.01),
-            // Request Attendance Button
             SizedBox(
               width: double.infinity,
               child: CustomButton(
                 text: 'Request Attendance',
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => RequestAttendanceDialog(),
-                  );
-                },
+                onPressed: () => showDialog(
+                  context: context,
+                  builder: (context) => RequestAttendanceDialog(),
+                ),
               ),
             ),
             SizedBox(height: screenHeight * 0.02),

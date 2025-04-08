@@ -11,7 +11,6 @@ class Employee {
   final int workDays;
   final int approvedLeaves;
   final String totalOvertime;
-  // Add other properties as needed
 
   Employee({
     required this.name,
@@ -22,8 +21,6 @@ class Employee {
 }
 
 class AttendanceDetailScreen extends StatefulWidget {
-  // No longer strictly required since the backend now uses request.user,
-  // but kept here if needed elsewhere.
   final Employee employee;
 
   const AttendanceDetailScreen({
@@ -41,7 +38,14 @@ class _AttendanceDetailScreenState extends State<AttendanceDetailScreen> {
   Map<String, dynamic> employeeDetails = {};
   Map<String, dynamic> attendanceSummary = {};
   bool isLoading = true;
+  bool isLoadingMore = false;
   String errorMessage = '';
+  
+  // Pagination variables
+  int currentPage = 1;
+  int itemsPerPage = 10;
+  bool hasMoreData = true;
+  int totalRecords = 0;
 
   @override
   void initState() {
@@ -49,14 +53,26 @@ class _AttendanceDetailScreenState extends State<AttendanceDetailScreen> {
     _fetchAttendanceDetails();
   }
 
-  Future<void> _fetchAttendanceDetails() async {
-    setState(() {
-      isLoading = true;
-      errorMessage = '';
-    });
+  Future<void> _fetchAttendanceDetails({bool loadMore = false}) async {
+    if (loadMore) {
+      if (!hasMoreData || isLoadingMore) return;
+      setState(() {
+        isLoadingMore = true;
+      });
+      currentPage++;
+    } else {
+      setState(() {
+        isLoading = true;
+        errorMessage = '';
+        currentPage = 1;
+        attendanceRecords = [];
+        hasMoreData = true;
+        totalRecords = 0;
+      });
+    }
 
     try {
-      final url = Uri.parse('$BASE_URL/empattendoverview/');
+      final url = Uri.parse('$BASE_URL/empattendoverview/?page=$currentPage&per_page=$itemsPerPage');
       await TokenService.ensureAccessToken();
       String? token = await TokenService.getAccessToken();
 
@@ -70,12 +86,31 @@ class _AttendanceDetailScreenState extends State<AttendanceDetailScreen> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        final newRecords = List<Map<String, dynamic>>.from(data['attendance_records'] ?? []);
+        
+        // Get total records count from API if available
+        final totalFromApi = data['total_records'] ?? data['meta']?['total'] ?? 0;
+        
         setState(() {
-          employeeDetails = data['employee_details'] ?? {};
-          attendanceRecords =
-              List<Map<String, dynamic>>.from(data['attendance_records'] ?? []);
-          attendanceSummary = data['attendance_summary'] ?? {};
+          if (!loadMore) {
+            employeeDetails = data['employee_details'] ?? {};
+            attendanceSummary = data['attendance_summary'] ?? {};
+            totalRecords = totalFromApi is int ? totalFromApi : 0;
+          }
+          
+          attendanceRecords.addAll(newRecords);
+          
+          // More accurate way to check if we've reached the end
+          if (totalRecords > 0) {
+            // If we have total records info from API
+            hasMoreData = attendanceRecords.length < totalRecords;
+          } else {
+            // Fallback: check if we got fewer items than requested
+            hasMoreData = newRecords.length >= itemsPerPage;
+          }
+          
           isLoading = false;
+          isLoadingMore = false;
         });
       } else {
         throw Exception('Failed to load attendance details');
@@ -83,6 +118,7 @@ class _AttendanceDetailScreenState extends State<AttendanceDetailScreen> {
     } catch (e) {
       setState(() {
         isLoading = false;
+        isLoadingMore = false;
         errorMessage = 'Error loading data. Please try again.';
       });
     }
@@ -96,7 +132,7 @@ class _AttendanceDetailScreenState extends State<AttendanceDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text('Attendance', style: TextStyle(color: Colors.white)),
         backgroundColor: primary,
@@ -107,83 +143,117 @@ class _AttendanceDetailScreenState extends State<AttendanceDetailScreen> {
           ? Center(child: CircularProgressIndicator())
           : errorMessage.isNotEmpty
               ? Center(child: Text(errorMessage))
-              : SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Attendance Summary',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
+              : NotificationListener<ScrollNotification>(
+                  onNotification: (scrollNotification) {
+                    // Load more when scrolled to bottom
+                    if (scrollNotification is ScrollEndNotification &&
+                        scrollNotification.metrics.extentAfter == 0 &&
+                        hasMoreData &&
+                        !isLoadingMore) {
+                      _fetchAttendanceDetails(loadMore: true);
+                      return true;
+                    }
+                    return false;
+                  },
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Attendance Summary',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
-                            SizedBox(height: 12),
-                            Row(
-                              children: [
-                                _buildSummaryCard(
-                                  'Present',
-                                  attendanceSummary['present']?.toString() ??
-                                      '0',
-                                  Colors.green,
-                                ),
-                                _buildSummaryCard(
-                                  'Absent',
-                                  attendanceSummary['absent']?.toString() ??
-                                      '0',
-                                  Colors.red,
-                                ),
-                                _buildSummaryCard(
-                                  'Late',
-                                  attendanceSummary['late']?.toString() ?? '0',
-                                  Colors.amber,
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 24),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Recent Attendance',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
+                              SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  _buildSummaryCard(
+                                    'Present',
+                                    attendanceSummary['present']?.toString() ??
+                                        '0',
+                                    Colors.green,
                                   ),
-                                ),
-                                SizedBox(height: 12),
-                                // Instead of mapping, use ListView.separated:
-                                ListView.separated(
-                                  shrinkWrap: true,
-                                  physics: NeverScrollableScrollPhysics(),
-                                  itemCount: attendanceRecords.length,
-                                  separatorBuilder: (context, index) =>
-                                      SizedBox(
-                                          height:
-                                              10), // spacing between each tile
-                                  itemBuilder: (context, index) =>
-                                      _buildAttendanceItem(
-                                          attendanceRecords[index]),
-                                ),
-                              ],
-                            )
-                          ],
+                                  _buildSummaryCard(
+                                    'Absent',
+                                    attendanceSummary['absent']?.toString() ??
+                                        '0',
+                                    Colors.red,
+                                  ),
+                                  _buildSummaryCard(
+                                    'Late',
+                                    attendanceSummary['late']?.toString() ?? '0',
+                                    Colors.amber,
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 24),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Recent Attendance',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  SizedBox(height: 12),
+                                  ListView.separated(
+                                    shrinkWrap: true,
+                                    physics: NeverScrollableScrollPhysics(),
+                                    itemCount: attendanceRecords.length + (hasMoreData ? 1 : 0),
+                                    separatorBuilder: (context, index) =>
+                                        SizedBox(height: 10),
+                                    itemBuilder: (context, index) {
+                                      if (index >= attendanceRecords.length) {
+                                        return _buildLoadMoreIndicator();
+                                      }
+                                      return _buildAttendanceItem(
+                                          attendanceRecords[index]);
+                                    },
+                                  ),
+                                ],
+                              )
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
+    );
+  }
+
+  Widget _buildLoadMoreIndicator() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Center(
+        child: isLoadingMore
+            ? CircularProgressIndicator()
+            : hasMoreData
+                ? ElevatedButton(
+                    onPressed: () => _fetchAttendanceDetails(loadMore: true),
+                    child: Text('Load More'),
+                  )
+                : Text(
+                    'No more records to load',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+      ),
     );
   }
 
   Widget _buildSummaryCard(String title, String value, Color color) {
     return Expanded(
       child: Card(
+        color: Colors.white,
         elevation: 2,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
@@ -230,11 +300,11 @@ class _AttendanceDetailScreenState extends State<AttendanceDetailScreen> {
           ),
         ),
       ),
-      clipBehavior: Clip.hardEdge, // Ensures the borderRadius is respected
+      clipBehavior: Clip.hardEdge, 
       child: IntrinsicHeight(
-        // Makes the Container shrink to fit the Card
         child: Card(
-          margin: EdgeInsets.zero, // Remove margin to avoid extra spacing
+          color: Colors.white,
+          margin: EdgeInsets.zero, 
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
@@ -276,14 +346,6 @@ class _AttendanceDetailScreenState extends State<AttendanceDetailScreen> {
                   ],
                 ),
                 SizedBox(height: 4),
-                // Row(
-                //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                //   children: [
-                //     Text(
-                //         'Hours: ${record['total_hours']?.toString().split('.').first ?? '0'}'),
-                //     Text('OT: ${_formatOvertime(record['total_overtime'])}'),
-                //   ],
-                // ),
               ],
             ),
           ),

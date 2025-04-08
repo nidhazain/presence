@@ -5,6 +5,7 @@ import 'package:presence/src/common_widget/submitbutton.dart';
 import 'package:presence/src/common_widget/text_tile.dart';
 import 'package:presence/src/constants/colors.dart';
 import 'package:presence/src/features/api/api.dart';
+import 'package:presence/src/features/api/employee/policyapi.dart';
 import 'package:presence/src/features/api/url.dart';
 import 'package:table_calendar/table_calendar.dart';
 
@@ -24,70 +25,114 @@ class _ShiftCalendarScreenState extends State<ShiftCalendarScreen> {
   bool _isHoliday = false;
   Map<DateTime, String> _shiftDataMap = {}; 
   Map<DateTime, List<dynamic>> _colleaguesMap = {}; 
-
-  final Map<DateTime, List<String>> holidays = {
-    DateTime(2025, 1, 26): ['Republic Day'],
-    DateTime(2025, 8, 15): ['Independence Day'],
-    DateTime(2025, 3, 31): ['Eid'],
-    DateTime(2025, 4, 14): ['Tamil New Year'],
-    DateTime(2025, 12, 25): ['Christmas'],
-  };
+  bool _isLoadingHolidays = false;
+  String? _holidaysError;
+  Map<DateTime, String> holidays = {};
+  Map<String, Color> _shiftColors = {}; // To store color mapping from backend
 
   @override
   void initState() {
     super.initState();
     _selectedDay = DateTime.now();
     _fetchInitialData();
+    _fetchHolidays();
+    _initializeDefaultColors();
   }
 
-  DateTime _normalizeDate(DateTime date) {
-    return DateTime(date.year, date.month, date.day);
+  void _initializeDefaultColors() {
+
+    _shiftColors = {
+      'morning': const Color.fromARGB(255, 30, 123, 236),
+      'intermediate': const Color.fromARGB(255, 40, 107, 37),
+      'night': const Color.fromARGB(255, 208, 9, 208),
+      'general': const Color.fromARGB(255, 221, 14, 73),
+    };
+  }
+
+  Future<void> _fetchHolidays() async {
+    setState(() {
+      _isLoadingHolidays = true;
+      _holidaysError = null;
+    });
+    
+    try {
+      final holidaysData = await PolicyService.fetchPublicHolidays();
+      setState(() {
+        holidays.clear();
+        for (var holiday in holidaysData) {
+          final date = DateTime.parse(holiday['date']);
+          holidays[_normalizeDate(date)] = holiday['name'];
+        }
+        _isLoadingHolidays = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingHolidays = false;
+        _holidaysError = 'Failed to load holidays';
+      });
+      print('Error fetching holidays: $e');
+    }
   }
 
   bool _checkHoliday(DateTime day) {
     return holidays.containsKey(_normalizeDate(day));
   }
 
+  DateTime _normalizeDate(DateTime date) {
+    return DateTime(date.year, date.month, date.day);
+  }
+
   Future<void> _fetchInitialData() async {
     await _fetchShiftDataForDay(_selectedDay!);
-    
     final firstDay = DateTime(_focusedDay.year, _focusedDay.month, 1);
     final lastDay = DateTime(_focusedDay.year, _focusedDay.month + 1, 0);
     await _fetchShiftsForRange(firstDay, lastDay);
   }
 
-  Future<void> _fetchShiftsForRange(DateTime start, DateTime end) async {
-    String? token = await TokenService.getAccessToken();
+Future<void> _fetchShiftsForRange(DateTime start, DateTime end) async {
+  String? token = await TokenService.getAccessToken();
+  
+  try {
+    final url = '$BASE_URL/shiftcolor/?start_date=${_formatDate(start)}&end_date=${_formatDate(end)}';
     
-    try {
-      final url = '$BASE_URL/shifts-range/?start_date=${_formatDate(start)}&end_date=${_formatDate(end)}';
-      
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      );
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data is List) {
-          setState(() {
-            _shiftDataMap.clear();
-            for (var shift in data) {
-              if (shift['date'] != null && shift['shift_type'] != null) {
-                final date = DateTime.parse(shift['date']);
-                _shiftDataMap[_normalizeDate(date)] = shift['shift_type'];
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> responseData = json.decode(response.body);
+      final List<dynamic> shiftDates = responseData['shift_dates'] ?? [];
+      
+      setState(() {
+        _shiftDataMap.clear();
+        
+        for (var dayData in shiftDates) {
+          if (dayData['date'] != null) {
+            final date = DateTime.parse(dayData['date']);
+            final shifts = dayData['shifts'] as Map<String, dynamic>?;
+            
+            if (shifts != null && shifts.isNotEmpty) {
+              // Get the first shift in the shifts map
+              final firstShift = shifts.values.first;
+              if (firstShift['shift_type'] != null) {
+                _shiftDataMap[_normalizeDate(date)] = firstShift['shift_type'];
               }
             }
-          });
+          }
         }
-      }
-    } catch (error) {
-      print('Error fetching shift range: $error');
+      });
+    } else {
+      print('Failed to fetch shift range: ${response.statusCode}');
     }
+  } catch (error) {
+    print('Error fetching shift range: $error');
+   // print('Response body: ${response?.body}'); // Add this to see the actual response
   }
+}
 
   Future<void> _fetchShiftDataForDay(DateTime day) async {
     String? token = await TokenService.getAccessToken();
@@ -111,7 +156,6 @@ class _ShiftCalendarScreenState extends State<ShiftCalendarScreen> {
           _colleagues = data;
           _isHoliday = _checkHoliday(day);
           
-          // Update maps
           final normalizedDate = _normalizeDate(day);
           if (_selectedDayShiftData != null && _selectedDayShiftData!['shift_type'] != null) {
             _shiftDataMap[normalizedDate] = _selectedDayShiftData!['shift_type'];
@@ -139,16 +183,9 @@ class _ShiftCalendarScreenState extends State<ShiftCalendarScreen> {
   }
 
   Color _getShiftColor(String? shift) {
-    switch (shift) {
-      case 'Morning':
-        return const Color.fromARGB(255, 54, 144, 240);
-      case 'Night':
-        return const Color.fromARGB(255, 167, 69, 243);
-      case 'Intermediate':
-        return const Color.fromARGB(255, 67, 107, 86);
-      default:
-        return primary;
-    }
+    if (shift == null) return primary;
+    final shiftLower = shift.toLowerCase();
+    return _shiftColors[shiftLower] ?? primary;
   }
 
   @override
@@ -210,7 +247,7 @@ class _ShiftCalendarScreenState extends State<ShiftCalendarScreen> {
           shape: BoxShape.circle,
         ),
         selectedDecoration: BoxDecoration(
-          color: Colors.blueAccent,
+          color: primary,
           shape: BoxShape.circle,
         ),
         holidayTextStyle: const TextStyle(color: Colors.red),
@@ -220,16 +257,38 @@ class _ShiftCalendarScreenState extends State<ShiftCalendarScreen> {
           final normalizedDate = _normalizeDate(date);
           final isHoliday = _checkHoliday(date);
           final shift = _shiftDataMap[normalizedDate];
+          final holidayName = holidays[normalizedDate];
           
           return Container(
             margin: const EdgeInsets.all(4.0),
             alignment: Alignment.center,
-            child: Text(
-              '${date.day}',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: isHoliday ? Colors.red : _getShiftColor(shift),
-              ),
+            // decoration: BoxDecoration(
+            //   shape: BoxShape.circle,
+            //   color: isHoliday 
+            //       ? Colors.red.withOpacity(0.1)
+            //       : (shift != null ? _getShiftColor(shift).withOpacity(0.2) : null),
+            // ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  '${date.day}',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: isHoliday 
+                        ? Colors.red 
+                        : (shift != null ? _getShiftColor(shift) : null),
+                  ),
+                ),
+                if (isHoliday && holidayName != null)
+                  Text(
+                    holidayName.split(' ')[0],
+                    style: const TextStyle(
+                      color: Colors.red,
+                      fontSize: 8,
+                    ),
+                  ),
+              ],
             ),
           );
         },
@@ -283,7 +342,9 @@ class _ShiftCalendarScreenState extends State<ShiftCalendarScreen> {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: isHoliday ? Colors.red.withOpacity(0.7) : Colors.blueAccent,
+              color: isHoliday 
+                  ? Colors.red.withOpacity(0.7) 
+                  : (shift != null ? _getShiftColor(shift).withOpacity(0.7) : Colors.blueAccent),
             ),
             child: Text(
               '${date.day}',
@@ -328,20 +389,19 @@ class _ShiftCalendarScreenState extends State<ShiftCalendarScreen> {
               ListTile(
                 title: Text(
                   isToday
-                      ? "Today's: $currentShift"
-                      : "$currentShift shift",
+                      ? "Today's: ${currentShift.toLowerCase() == 'general' ? 'General' : currentShift}"
+                      : "${currentShift.toLowerCase() == 'general' ? 'General' : currentShift} shift",
                   style: const TextStyle(
                       fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 subtitle: Text(
-                   _selectedDay!.toLocal().toString().split(' ')[0],
+                  _selectedDay!.toLocal().toString().split(' ')[0],
                   style: const TextStyle(fontSize: 14),
                 ),
               ),
               if (_isHoliday)
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0, vertical: 8.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                   child: Container(
                     padding: const EdgeInsets.all(8.0),
                     decoration: BoxDecoration(
@@ -355,7 +415,7 @@ class _ShiftCalendarScreenState extends State<ShiftCalendarScreen> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            "Holiday: ${holidays[normalizedDate]?.join(', ') ?? ''}",
+                            "Holiday: ${holidays[normalizedDate] ?? ''}",
                             style: const TextStyle(
                               color: Colors.red,
                               fontWeight: FontWeight.bold,

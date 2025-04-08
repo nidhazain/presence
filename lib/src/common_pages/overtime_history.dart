@@ -44,7 +44,6 @@ class _OvertimeHistoryPageState extends State<OvertimeHistoryPage> with SingleTi
         isLoading = false;
       });
     } catch (e) {
-      print('Error fetching overtime assignments: $e');
       setState(() {
         isLoading = false;
       });

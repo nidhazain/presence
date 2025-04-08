@@ -21,8 +21,13 @@ class EmployeeOvertimeDetailPage extends StatefulWidget {
 class _EmployeeOvertimeDetailPageState
     extends State<EmployeeOvertimeDetailPage> {
   bool isLoading = true;
+  bool isLoadingMore = false;
   String errorMessage = '';
   late EmployeeOvertimeDetail detail;
+  List<OvertimeHistoryItem> displayedHistory = [];
+  int currentPage = 1;
+  int itemsPerPage = 10;
+  bool hasMoreItems = true;
 
   @override
   void initState() {
@@ -34,6 +39,8 @@ class _EmployeeOvertimeDetailPageState
     setState(() {
       isLoading = true;
       errorMessage = '';
+      currentPage = 1;
+      hasMoreItems = true;
     });
 
     try {
@@ -51,6 +58,8 @@ class _EmployeeOvertimeDetailPageState
         final responseData = json.decode(response.body) as Map<String, dynamic>;
         setState(() {
           detail = EmployeeOvertimeDetail.fromJson(responseData);
+          displayedHistory = detail.overtimeHistory.take(itemsPerPage).toList();
+          hasMoreItems = detail.overtimeHistory.length > itemsPerPage;
           isLoading = false;
         });
       } else {
@@ -65,6 +74,38 @@ class _EmployeeOvertimeDetailPageState
         errorMessage = 'Error fetching details: ${e.toString()}';
       });
     }
+  }
+
+  void loadMoreItems() {
+    if (isLoadingMore || !hasMoreItems) return;
+
+    setState(() {
+      isLoadingMore = true;
+    });
+
+    // Simulate network delay (remove in production)
+    Future.delayed(const Duration(milliseconds: 500), () {
+      final nextPageStart = currentPage * itemsPerPage;
+      final nextPageEnd = nextPageStart + itemsPerPage;
+      
+      setState(() {
+        if (nextPageStart < detail.overtimeHistory.length) {
+          displayedHistory.addAll(
+            detail.overtimeHistory.sublist(
+              nextPageStart,
+              nextPageEnd < detail.overtimeHistory.length 
+                ? nextPageEnd 
+                : detail.overtimeHistory.length
+            )
+          );
+          currentPage++;
+          hasMoreItems = nextPageEnd < detail.overtimeHistory.length;
+        } else {
+          hasMoreItems = false;
+        }
+        isLoadingMore = false;
+      });
+    });
   }
 
   @override
@@ -148,9 +189,9 @@ class _EmployeeOvertimeDetailPageState
                                   const Icon(Icons.timer, color: primary),
                                   const SizedBox(width: 8),
                                   Text(
-                                    'Total: ${detail.totalOvertime.toStringAsFixed(1)} hrs',
+                                    'Total Completed: ${detail.totalOvertime.toStringAsFixed(1)} hrs',
                                     style: const TextStyle(
-                                      fontSize: 18,
+                                      fontSize: 14,
                                       fontWeight: FontWeight.bold,
                                       color: primary,
                                     ),
@@ -180,7 +221,7 @@ class _EmployeeOvertimeDetailPageState
                               ],
                             ),
                             const SizedBox(height: 16),
-                            if (detail.overtimeHistory.isEmpty)
+                            if (displayedHistory.isEmpty)
                               const Center(
                                 child: Text(
                                   'No overtime history found',
@@ -188,75 +229,161 @@ class _EmployeeOvertimeDetailPageState
                                 ),
                               )
                             else
-                              ...detail.overtimeHistory.map((item) => Card(
-                                    margin: const EdgeInsets.only(bottom: 12),
-                                    elevation: 2,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(16),
-                                      child: Row(
-                                        children: [
-                                          Container(
-                                            padding: const EdgeInsets.all(12),
-                                            decoration: BoxDecoration(
-                                              color: primary.withOpacity(0.1),
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                            ),
-                                            child: const Icon(Icons.date_range,
-                                                color: primary),
-                                          ),
-                                          const SizedBox(width: 16),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  item.date,
-                                                  style: const TextStyle(
-                                                    fontSize: 16,
-                                                    fontWeight: FontWeight.w500,
-                                                  ),
+                              Column(
+                                children: [
+                                  ...displayedHistory.map((item) => Card(
+                                        margin: const EdgeInsets.only(bottom: 12),
+                                        elevation: 2,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(16),
+                                          child: Row(
+                                            children: [
+                                              Container(
+                                                padding: const EdgeInsets.all(12),
+                                                decoration: BoxDecoration(
+                                                  color: primary.withOpacity(0.1),
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
                                                 ),
-                                                const SizedBox(height: 4),
-                                                Text(
-                                                  item.reason,
-                                                  style: const TextStyle(
-                                                    fontSize: 14,
-                                                    color: Colors.grey,
-                                                  ),
-                                                  maxLines: 2,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 12,
-                                              vertical: 8,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: Colors.grey.shade100,
-                                              borderRadius:
-                                                  BorderRadius.circular(20),
-                                            ),
-                                            child: Text(
-                                              '${item.hours.toStringAsFixed(1)} hrs',
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                color: primary,
+                                                child: const Icon(Icons.date_range,
+                                                    color: primary),
                                               ),
-                                            ),
+                                              const SizedBox(width: 16),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      item.date,
+                                                      style: const TextStyle(
+                                                        fontSize: 16,
+                                                        fontWeight: FontWeight.w500,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 4),
+                                                    Text(
+                                                      item.reason,
+                                                      style: const TextStyle(
+                                                        fontSize: 14,
+                                                        color: Colors.grey,
+                                                      ),
+                                                      maxLines: 2,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              Column(
+                                                children: [
+                                                  Container(
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                      horizontal: 12,
+                                                      vertical: 8,
+                                                    ),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.grey.shade100,
+                                                      borderRadius:
+                                                          BorderRadius.circular(20),
+                                                    ),
+                                                    child: Text(
+                                                      '${item.hours.toStringAsFixed(1)} hrs',
+                                                      style: TextStyle(
+                                                        fontWeight: FontWeight.bold,
+                                                        color: primary,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  Container(
+                                                    padding: EdgeInsets.all(8),
+                                                    decoration: BoxDecoration(
+                                                      color: item.status
+                                                                  .toLowerCase() ==
+                                                              'missed'
+                                                          ? red.withOpacity(0.1)
+                                                          : item.status
+                                                                      .toLowerCase() ==
+                                                                  'completed'
+                                                              ? dgreen
+                                                                  .withOpacity(0.1)
+                                                                  : item.status
+                                                                      .toLowerCase() ==
+                                                                  'upcoming'
+                                                              ? Colors.blue
+                                                                  .withOpacity(0.1)
+                                                              : Colors.grey.shade100,
+                                                      borderRadius:
+                                                          BorderRadius.circular(50),
+                                                    ),
+                                                    child: Text(
+                                                      item.status,
+                                                      style: TextStyle(
+                                                        fontSize: 10,
+                                                        color: item.status
+                                                                    .toLowerCase() ==
+                                                                'missed'
+                                                            ? red
+                                                            : item.status
+                                                                        .toLowerCase() ==
+                                                                    'completed'
+                                                                ? dgreen
+                                                                : item.status
+                                                                        .toLowerCase() ==
+                                                                    'upcoming'
+                                                                ? Colors.blue
+                                                                : primary,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              )
+                                            ],
                                           ),
-                                        ],
+                                        ),
+                                      )),
+                                  if (isLoadingMore)
+                                    const Padding(
+                                      padding: EdgeInsets.symmetric(vertical: 16),
+                                      child: Center(
+                                        child: CircularProgressIndicator(),
                                       ),
                                     ),
-                                  )),
+                                  if (!isLoadingMore && hasMoreItems)
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 16),
+                                      child: Center(
+                                        child: ElevatedButton(
+                                          onPressed: loadMoreItems,
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: primary,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(20),
+                                            ),
+                                          ),
+                                          child: const Text(
+                                            'Load More',
+                                            style: TextStyle(color: Colors.white),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  if (!hasMoreItems && displayedHistory.isNotEmpty)
+                                    const Padding(
+                                      padding: EdgeInsets.symmetric(vertical: 16),
+                                      child: Center(
+                                        child: Text(
+                                          'No more items to load',
+                                          style: TextStyle(color: Colors.grey),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
                           ],
                         ),
                       ),

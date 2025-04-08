@@ -41,6 +41,12 @@ class _NotificationPageState extends State<NotificationPage> {
   List<Notification> _allNotifications = [];
   bool _isLoading = true;
   String? _errorMessage;
+  
+  // Pagination parameters
+  final int _itemsPerPage = 5; // Load 5 items initially
+  int _currentPage = 1;
+  bool _hasMorePages = true;
+  bool _isLoadingMore = false;
 
   @override
   void initState() {
@@ -49,11 +55,17 @@ class _NotificationPageState extends State<NotificationPage> {
   }
 
   Future<void> _fetchNotifications() async {
+    setState(() {
+      _isLoading = true;
+      _currentPage = 1;
+    });
+    
     try {
       await TokenService.ensureAccessToken();
-      final token = TokenService.getAccessToken();
+      String? token = await TokenService.getAccessToken();
+      
       final response = await http.get(
-        Uri.parse('$BASE_URL/leavenotification/'), // Updated endpoint
+        Uri.parse('$BASE_URL/leavenotification/?page=$_currentPage&page_size=$_itemsPerPage'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -61,13 +73,36 @@ class _NotificationPageState extends State<NotificationPage> {
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
-        setState(() {
-          _allNotifications = data
-              .map((json) => Notification.fromJson(json))
-              .toList();
-          _isLoading = false;
-        });
+        final data = json.decode(response.body);
+        
+        // Check if the response is paginated
+        if (data is Map<String, dynamic> && data.containsKey('results')) {
+          // Handle paginated response
+          final List<dynamic> results = data['results'];
+          final bool hasNext = data['next'] != null;
+          
+          setState(() {
+            _allNotifications = results
+                .map((json) => Notification.fromJson(json))
+                .toList();
+            _hasMorePages = hasNext;
+            _isLoading = false;
+          });
+        } else {
+          // Handle non-paginated response (for backward compatibility)
+          final List<dynamic> notifications = data is List ? data : [];
+          
+          // If not paginated, just take the first 5 items
+          final limitedNotifications = notifications.take(_itemsPerPage).toList();
+          
+          setState(() {
+            _allNotifications = limitedNotifications
+                .map((json) => Notification.fromJson(json))
+                .toList();
+            _hasMorePages = notifications.length > _itemsPerPage;
+            _isLoading = false;
+          });
+        }
       } else {
         setState(() {
           _isLoading = false;
@@ -82,10 +117,95 @@ class _NotificationPageState extends State<NotificationPage> {
     }
   }
 
+  Future<void> _loadMoreNotifications() async {
+    if (_isLoadingMore || !_hasMorePages) return;
+    
+    setState(() {
+      _isLoadingMore = true;
+    });
+    
+    try {
+      await TokenService.ensureAccessToken();
+      String? token = await TokenService.getAccessToken();
+      
+      final nextPage = _currentPage + 1;
+      final response = await http.get(
+        Uri.parse('$BASE_URL/leavenotification/?page=$nextPage&page_size=$_itemsPerPage'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        
+        if (data is Map<String, dynamic> && data.containsKey('results')) {
+          final List<dynamic> results = data['results'];
+          final bool hasNext = data['next'] != null;
+          
+          if (results.isNotEmpty) {
+            final newNotifications = results
+                .map((json) => Notification.fromJson(json))
+                .toList();
+                
+            setState(() {
+              _allNotifications.addAll(newNotifications);
+              _currentPage = nextPage;
+              _hasMorePages = hasNext;
+              _isLoadingMore = false;
+            });
+          } else {
+            setState(() {
+              _hasMorePages = false;
+              _isLoadingMore = false;
+            });
+          }
+        } else {
+          // Handle non-paginated response
+          final List<dynamic> allNotifications = data is List ? data : [];
+          final int startIndex = _currentPage * _itemsPerPage;
+          
+          if (startIndex < allNotifications.length) {
+            final int endIndex = (startIndex + _itemsPerPage > allNotifications.length) 
+                ? allNotifications.length 
+                : startIndex + _itemsPerPage;
+            
+            final newNotifications = allNotifications.sublist(startIndex, endIndex)
+                .map((json) => Notification.fromJson(json))
+                .toList();
+            
+            setState(() {
+              _allNotifications.addAll(newNotifications);
+              _currentPage = nextPage;
+              _hasMorePages = endIndex < allNotifications.length;
+              _isLoadingMore = false;
+            });
+          } else {
+            setState(() {
+              _hasMorePages = false;
+              _isLoadingMore = false;
+            });
+          }
+        }
+      } else {
+        setState(() {
+          _isLoadingMore = false;
+          _errorMessage = 'Failed to load more notifications: ${response.statusCode}';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _isLoadingMore = false;
+        _errorMessage = 'Error loading more notifications: $e';
+      });
+    }
+  }
+
   Future<void> _markAsRead(String notificationId) async {
     try {
       await TokenService.ensureAccessToken();
-      final token = TokenService.getAccessToken();
+      final token = await TokenService.getAccessToken();
       final response = await http.patch(
         Uri.parse('$BASE_URL/notifications/$notificationId/mark_as_read/'),
         headers: {
@@ -103,7 +223,7 @@ class _NotificationPageState extends State<NotificationPage> {
         });
       }
     } catch (e) {
-      print(e);
+      print('Error marking notification as read: $e');
     }
   }
 
@@ -220,6 +340,29 @@ class _NotificationPageState extends State<NotificationPage> {
     );
   }
 
+  Widget _buildLoadMoreButton() {
+    if (!_hasMorePages) {
+      return const SizedBox.shrink();
+    }
+    
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Center(
+        child: _isLoadingMore 
+            ? const CircularProgressIndicator()
+            : ElevatedButton(
+                onPressed: _loadMoreNotifications,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                ),
+                child: const Text('Load More'),
+              ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final todayNotifications = _getTodayNotifications();
@@ -243,20 +386,62 @@ class _NotificationPageState extends State<NotificationPage> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _errorMessage != null
-              ? Center(child: Text(_errorMessage!))
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(_errorMessage!),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _fetchNotifications,
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                )
               : RefreshIndicator(
                   onRefresh: _fetchNotifications,
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildNotificationList('Today', todayNotifications),
-                        _buildNotificationList('Yesterday', yesterdayNotifications),
-                        _buildNotificationList('This Week', thisWeekNotifications),
-                        _buildNotificationList('Older', olderNotifications),
-                      ],
-                    ),
+                  child: Stack(
+                    children: [
+                      SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildNotificationList('Today', todayNotifications),
+                            _buildNotificationList('Yesterday', yesterdayNotifications),
+                            _buildNotificationList('This Week', thisWeekNotifications),
+                            _buildNotificationList('Older', olderNotifications),
+                            
+                            // Load more button
+                            _buildLoadMoreButton(),
+                            
+                            // Space at the bottom to allow pull to refresh when list is short
+                            if (_allNotifications.isEmpty)
+                              const SizedBox(height: 100),
+                          ],
+                        ),
+                      ),
+                      
+                      // Empty state view
+                      if (_allNotifications.isEmpty && !_isLoading)
+                        Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              Icon(Icons.notifications_none, size: 64, color: Colors.grey),
+                              SizedBox(height: 16),
+                              Text(
+                                'No notifications yet',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
                   ),
                 ),
     );

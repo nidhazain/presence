@@ -14,6 +14,7 @@ class Attendance {
   final String workType;
   final String? location;
   final String? image;
+  late final DateTime dateTime; // Add this field
 
   Attendance({
     required this.id,
@@ -24,7 +25,9 @@ class Attendance {
     required this.workType,
     this.location,
     this.image,
-  });
+  }) {
+    dateTime = DateFormat('yyyy-MM-dd').parse(date);
+  }
 
   factory Attendance.fromJson(Map<String, dynamic> json) {
     return Attendance(
@@ -184,98 +187,107 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<List<Attendance>>(
-      future: attendanceFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        } else if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
-        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          // Improved empty state design
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.calendar_today_outlined,
-                  size: 80,
-                  color: Colors.grey.shade400,
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  'No Attendance Records',
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.grey.shade600,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  'Your attendance history will appear here',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade500,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-
-        final attendanceList = snapshot.data!;
-
-        return ListView.separated(
-          padding: const EdgeInsets.all(10),
-          separatorBuilder: (context, index) => Divider(
-            height: 1,
-            thickness: 1,
-            color: Colors.grey.shade300,
-          ),
-          itemCount: attendanceList.length,
-          itemBuilder: (context, index) {
-            final attendance = attendanceList[index];
-            return GestureDetector(
-              onTap: () => showAttendanceDetailsDialog(context, attendance),
-              child: Container(
-                padding: const EdgeInsets.all(10),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        CustomTitleText10(text: attendance.workType),
-                        const SizedBox(height: 5),
-                        CustomTitleText20(
-                          text:
-                              "${formatTime(attendance.checkIn)} to ${formatTime(attendance.checkOut)}",
-                        ),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        Container(
-                          width: 10,
-                          height: 10,
-                          decoration: BoxDecoration(
-                            color: getStatusColor(attendance.status),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        CustomTitleText9(text: attendance.status),
-                      ],
-                    ),
-                  ],
+Widget build(BuildContext context) {
+  return FutureBuilder<List<Attendance>>(
+    future: attendanceFuture,
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return const Center(child: CircularProgressIndicator());
+      } else if (snapshot.hasError) {
+        return Center(child: Text('Error: ${snapshot.error}'));
+      } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.calendar_today_outlined,
+                size: 80,
+                color: Colors.grey.shade400,
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'No Attendance Records',
+                style: TextStyle(
+                  fontSize: 18,
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
-            );
-          },
+              const SizedBox(height: 10),
+              Text(
+                'Your attendance history will appear here',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey.shade500,
+                ),
+              ),
+            ],
+          ),
         );
-      },
-    );
-  }
+      }
+
+      // Sort the attendance list by date in descending order (newest first)
+      final attendanceList = snapshot.data!..sort((a, b) => b.dateTime.compareTo(a.dateTime));
+
+      return ListView.separated(
+        padding: const EdgeInsets.all(10),
+        separatorBuilder: (context, index) => Divider(
+          height: 1,
+          thickness: 1,
+          color: Colors.grey.shade300,
+        ),
+        itemCount: attendanceList.length,
+        itemBuilder: (context, index) {
+          final attendance = attendanceList[index];
+          return GestureDetector(
+            onTap: () => showAttendanceDetailsDialog(context, attendance),
+            child: Container(
+              padding: const EdgeInsets.all(10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Add date display here
+                      Text(
+                        DateFormat('dd MMM yyyy').format(attendance.dateTime),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      CustomTitleText10(text: attendance.workType),
+                      const SizedBox(height: 5),
+                      CustomTitleText20(
+                        text:
+                            "${formatTime(attendance.checkIn)} to ${formatTime(attendance.checkOut)}",
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: getStatusColor(attendance.status),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      CustomTitleText9(text: attendance.status),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+    },
+  );
+}
 }

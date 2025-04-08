@@ -356,7 +356,8 @@ class _LeaveRequestPageState extends State<LeaveRequestPage> {
                                           ),
                                           IconButton(
                                             icon: Icon(Icons.close, color: red),
-                                            onPressed: () => showRejectConfirmation(leave['id']),
+                                            onPressed: () =>  updateLeaveStatus(
+                                              leave['id'], 'reject'),
                                           ),
                                         ],
                                       )

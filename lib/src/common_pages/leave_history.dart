@@ -5,7 +5,6 @@ import 'package:presence/src/common_widget/submitbutton.dart';
 import 'package:presence/src/common_widget/text_tile.dart';
 import 'package:presence/src/constants/colors.dart';
 import 'package:presence/src/features/api/employee/leaveapi.dart';
-
 import '../models/leave.dart';
 
 class LeaveHistory extends StatefulWidget {
@@ -17,6 +16,8 @@ class LeaveHistory extends StatefulWidget {
 
 class _LeaveHistoryState extends State<LeaveHistory> {
   late Future<List<Leave>> _leaveFuture;
+  final int _itemsPerPage = 5;
+  int _currentPage = 1;
 
   @override
   void initState() {
@@ -47,6 +48,13 @@ class _LeaveHistoryState extends State<LeaveHistory> {
     } catch (e) {
       return dateStr;
     }
+  }
+
+  // Sorting function to sort leaves by id (descending)
+  List<Leave> _sortLeavesById(List<Leave> leaves) {
+    List<Leave> sortedLeaves = List.from(leaves);
+    sortedLeaves.sort((a, b) => b.id.compareTo(a.id));
+    return sortedLeaves;
   }
 
   void _showCancelConfirmation(BuildContext context, Leave leave) {
@@ -146,6 +154,37 @@ class _LeaveHistoryState extends State<LeaveHistory> {
     );
   }
 
+  Widget _buildPaginationControls(int totalItems, int currentPage) {
+    final totalPages = (totalItems / _itemsPerPage).ceil();
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.chevron_left),
+          onPressed: currentPage > 1
+              ? () {
+                  setState(() {
+                    _currentPage--;
+                  });
+                }
+              : null,
+        ),
+        Text('Page $currentPage of $totalPages'),
+        IconButton(
+          icon: const Icon(Icons.chevron_right),
+          onPressed: currentPage < totalPages
+              ? () {
+                  setState(() {
+                    _currentPage++;
+                  });
+                }
+              : null,
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final double screenWidth = MediaQuery.of(context).size.width;
@@ -162,62 +201,75 @@ class _LeaveHistoryState extends State<LeaveHistory> {
             } else if (snapshot.hasError) {
               return Center(child: Text('Error: ${snapshot.error}'));
             } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return _buildEmptyState(); // New empty state widget
+              return _buildEmptyState();
             }
 
-            final leaveList = snapshot.data!;
-            print('Leave List: $leaveList'); // Print fetched data
-            return ListView.separated(
-              itemCount: leaveList.length,
-              separatorBuilder: (context, index) => Divider(
-                height: 1,
-                thickness: 1,
-                color: Colors.grey.shade300,
-              ),
-              itemBuilder: (context, index) {
-                final leave = leaveList[index];
+            // Apply sorting by ID here
+            final leaveList = _sortLeavesById(snapshot.data!);
+            final totalItems = leaveList.length;
+            final startIndex = (_currentPage - 1) * _itemsPerPage;
+            final endIndex = startIndex + _itemsPerPage > totalItems
+                ? totalItems
+                : startIndex + _itemsPerPage;
+            final paginatedLeaves = leaveList.sublist(startIndex, endIndex);
 
-                return GestureDetector(
-                  
-                  onTap: () => 
-                  
-                  showLeaveDetailsDialog(context, leave),
-                  child: Container(
-                    padding: const EdgeInsets.all(10),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            CustomTitleText10(text: leave.type),
-                            const SizedBox(height: 5),
-                            CustomTitleText20(
-                                text: formatDate(leave.startDate)),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            CircleAvatar(
-                              backgroundColor: getStatusColor(leave.status),
-                              radius: 5,
-                            ),
-                            const SizedBox(width: 10),
-                            CustomTitleText9(text: leave.status),
-                            if (leave.status.toLowerCase() == 'approved')
-                              TextButton(
-                                onPressed: () =>
-                                    _showCancelConfirmation(context, leave),
-                                child: const Text("Cancel",
-                                    style: TextStyle(color: Colors.red)),
-                              ),
-                          ],
-                        ),
-                      ],
+            return Column(
+              children: [
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: paginatedLeaves.length,
+                    separatorBuilder: (context, index) => Divider(
+                      height: 1,
+                      thickness: 1,
+                      color: Colors.grey.shade300,
                     ),
+                    itemBuilder: (context, index) {
+                      final leave = paginatedLeaves[index];
+
+                      return GestureDetector(
+                        onTap: () => showLeaveDetailsDialog(context, leave),
+                        child: Container(
+                          padding: const EdgeInsets.all(10),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  CustomTitleText10(text: leave.type),
+                                  const SizedBox(height: 5),
+                                  CustomTitleText20(
+                                      text: formatDate(leave.startDate)),
+                                ],
+                              ),
+                              Row(
+                                children: [
+                                  CircleAvatar(
+                                    backgroundColor:
+                                        getStatusColor(leave.status),
+                                    radius: 5,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  CustomTitleText9(text: leave.status),
+                                  if (leave.status.toLowerCase() == 'approved')
+                                    TextButton(
+                                      onPressed: () => _showCancelConfirmation(
+                                          context, leave),
+                                      child: const Text("Cancel",
+                                          style: TextStyle(color: Colors.red)),
+                                    ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
+                ),
+                if (totalItems > _itemsPerPage)
+                  _buildPaginationControls(totalItems, _currentPage),
+              ],
             );
           },
         ),

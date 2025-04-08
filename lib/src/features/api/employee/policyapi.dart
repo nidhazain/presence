@@ -23,4 +23,23 @@ class PolicyService {
     throw Exception('Failed to load policy data');
   }
 }
+
+static Future<List<dynamic>> fetchPublicHolidays() async {
+  await TokenService.ensureAccessToken();
+  final token = await TokenService.getAccessToken();
+  final response = await http.get(
+    Uri.parse('$BASE_URL/policy-view/'),
+    headers: {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    },
+  );
+
+  if (response.statusCode == 200) {
+    final data = jsonDecode(response.body);
+    return data['public_holidays']; 
+  } else {
+    throw Exception('Failed to load policy data');
+  }
+}
 }

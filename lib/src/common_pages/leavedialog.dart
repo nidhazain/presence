@@ -204,13 +204,13 @@ void showLeaveDetailsDialog(BuildContext context, Leave leave) {
               
              
               
-              const SizedBox(height: 20),
-              if (leave.status.toLowerCase() == 'pending')
-                CustomButton(
-                  text: "Delete Request",
-                  onPressed: () {
-                  },
-                ),
+              // const SizedBox(height: 20),
+              // if (leave.status.toLowerCase() == 'pending')
+              //   CustomButton(
+              //     text: "Delete Request",
+              //     onPressed: () {
+              //     },
+              //   ),
             ],
           ),
         ),

@@ -431,7 +431,6 @@ GestureDetector(
   onTap: () {
     if (_isLoadingShifts) return;
     
-    // Organize shifts by shift_type
     Map<String, List<dynamic>> shiftsByType = {};
     
     for (var assignment in shiftAssignments) {
@@ -443,39 +442,90 @@ GestureDetector(
     }
     
     showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text("Today's Shift Assignments"),
-          content: Container(
-            width: double.maxFinite,
-            child: shiftAssignments.isEmpty
-                ? Text("No shift assignments for today")
-                : ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: shiftsByType.length,
-                    itemBuilder: (context, index) {
-                      String shiftType = shiftsByType.keys.elementAt(index);
-                      List<dynamic> employees = shiftsByType[shiftType]!;
-                      
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Shift heading
-                          Padding(
-                            padding: EdgeInsets.only(top: index > 0 ? 16 : 0, bottom: 8),
-                            child: Text(
-                              shiftType,
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                                color: primary,
+  context: context,
+  builder: (BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      elevation: 0,
+      backgroundColor: Colors.transparent,
+      child: Container(
+        padding: EdgeInsets.fromLTRB(24, 20, 24, 24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 10,
+              offset: Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header with title and close icon
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "Today's Shift",
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                InkWell(
+                  onTap: () => Navigator.pop(context),
+                  child: Icon(
+                    Icons.close,
+                    size: 22,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 20),
+            
+            // Content
+            Flexible(
+              child: Container(
+                width: double.maxFinite,
+                child: shiftAssignments.isEmpty
+                  ? Center(
+                      child: Text(
+                        "No shift assignments for today",
+                        style: TextStyle(
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    )
+                  : ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: shiftsByType.length,
+                      itemBuilder: (context, index) {
+                        String shiftType = shiftsByType.keys.elementAt(index);
+                        List<dynamic> employees = shiftsByType[shiftType]!;
+                        
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Shift heading
+                            Padding(
+                              padding: EdgeInsets.only(top: index > 0 ? 16 : 0, bottom: 8),
+                              child: Text(
+                                shiftType,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
                               ),
                             ),
-                          ),
-                          
-                          // Employees or "No employees" message
-                          employees.isEmpty
+                            
+                            // Employee list or empty message
+                            employees.isEmpty
                               ? Padding(
                                   padding: EdgeInsets.only(left: 8, bottom: 8),
                                   child: Text(
@@ -490,31 +540,44 @@ GestureDetector(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: employees.map((employee) {
                                     return Padding(
-                                      padding: EdgeInsets.only(left: 8, bottom: 4),
-                                      child: Text(
-                                        employee['employee_name'] ?? 'Unknown',
+                                      padding: EdgeInsets.only(left: 8, bottom: 8),
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            width: 6,
+                                            height: 6,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: Colors.grey[400],
+                                            ),
+                                            margin: EdgeInsets.only(right: 8),
+                                          ),
+                                          Expanded(
+                                            child: Text(
+                                              employee['employee_name'] ?? 'Unknown',
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     );
                                   }).toList(),
                                 ),
-                          
-                          // Add divider if not the last item
-                          if (index < shiftsByType.length - 1)
-                            Divider(height: 16),
-                        ],
-                      );
-                    },
-                  ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text("Close"),
+                            
+                            // Add divider if not the last item
+                            if (index < shiftsByType.length - 1)
+                              Divider(height: 24, thickness: 0.5),
+                          ],
+                        );
+                      },
+                    ),
+              ),
             ),
           ],
-        );
-      },
+        ),
+      ),
     );
+  },
+);
   },
   child: CustomCard2(
     title: "Today's Shifts",

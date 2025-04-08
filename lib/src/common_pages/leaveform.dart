@@ -27,6 +27,8 @@ class _LeaveFormState extends State<LeaveForm> {
   List<Map<String, dynamic>> _leaveTypes = [];
   bool _isLoading = true;
   File? _selectedImage;
+  final DateFormat _displayDateFormat = DateFormat('dd MMM yyyy');
+  final DateFormat _backendDateFormat = DateFormat('yyyy-MM-dd');
 
   @override
   void initState() {
@@ -47,7 +49,6 @@ class _LeaveFormState extends State<LeaveForm> {
       }
       List<Map<String, dynamic>> fetchedLeaveTypes =
           await LeaveService.getLeaveTypes(token);
-      print("Fetched leave types: $fetchedLeaveTypes");
 
       if (mounted) {
         setState(() {
@@ -247,10 +248,17 @@ class _LeaveFormState extends State<LeaveForm> {
         }
         return;
       }
+
+      // Convert display dates to backend format
+      String startDate = _backendDateFormat
+          .format(_displayDateFormat.parse(_startDateController.text));
+      String endDate = _backendDateFormat
+          .format(_displayDateFormat.parse(_endDateController.text));
+
       final response = await LeaveService.submitLeaveRequest(
         token: token,
-        startDate: _startDateController.text,
-        endDate: _endDateController.text,
+        startDate: startDate, // Now in yyyy-MM-dd format
+        endDate: endDate, // Now in yyyy-MM-dd format
         leaveType: _selectedLeaveType != null
             ? _selectedLeaveType!["id"].toString()
             : "",
@@ -262,10 +270,8 @@ class _LeaveFormState extends State<LeaveForm> {
       }
 
       if (response.containsKey('error')) {
-        // Check for the specific validation message from the backend.
         if (response['error'] ==
             'You already have a leave request for this date range!') {
-          // Show a friendly alert dialog.
           if (mounted) {
             showDialog(
               context: context,
@@ -282,7 +288,6 @@ class _LeaveFormState extends State<LeaveForm> {
             );
           }
         } else {
-          // Handle other errors with a SnackBar
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(response['error'])),
@@ -290,7 +295,6 @@ class _LeaveFormState extends State<LeaveForm> {
           }
         }
       } else {
-        // Successful leave request
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Leave request submitted successfully')),
@@ -301,16 +305,13 @@ class _LeaveFormState extends State<LeaveForm> {
     }
   }
 
-  // Helper to calculate leave days (inclusive)
   int? _calculateLeaveDays() {
     if (_startDateController.text.isEmpty || _endDateController.text.isEmpty) {
       return null;
     }
     try {
-      DateTime startDate =
-          DateFormat('yyyy-MM-dd').parse(_startDateController.text);
-      DateTime endDate =
-          DateFormat('yyyy-MM-dd').parse(_endDateController.text);
+      DateTime startDate = _displayDateFormat.parse(_startDateController.text);
+      DateTime endDate = _displayDateFormat.parse(_endDateController.text);
       if (endDate.isBefore(startDate)) return null;
       return endDate.difference(startDate).inDays + 1;
     } catch (e) {
@@ -318,7 +319,6 @@ class _LeaveFormState extends State<LeaveForm> {
     }
   }
 
-  // Update the leave days field after selecting dates
   void _updateLeaveDays() {
     int? days = _calculateLeaveDays();
     if (mounted) {
@@ -328,7 +328,6 @@ class _LeaveFormState extends State<LeaveForm> {
     }
   }
 
-  // Widget for leave days field using the controller
   Widget _buildLeaveDaysField() {
     return TextFormField(
       controller: _leaveDaysController,
@@ -367,9 +366,10 @@ class _LeaveFormState extends State<LeaveForm> {
         if (controller == _endDateController &&
             _startDateController.text.isNotEmpty) {
           try {
+            // Parse using display format for validation
             DateTime startDate =
-                DateFormat('yyyy-MM-dd').parse(_startDateController.text);
-            DateTime endDate = DateFormat('yyyy-MM-dd').parse(value!);
+                _displayDateFormat.parse(_startDateController.text);
+            DateTime endDate = _displayDateFormat.parse(value!);
             if (endDate.isBefore(startDate)) {
               return 'End date cannot be before start date';
             }
@@ -388,7 +388,8 @@ class _LeaveFormState extends State<LeaveForm> {
         );
         if (pickedDate != null && mounted) {
           setState(() {
-            controller.text = DateFormat('yyyy-MM-dd').format(pickedDate);
+            // Store in display format
+            controller.text = _displayDateFormat.format(pickedDate);
           });
           _updateLeaveDays();
         }

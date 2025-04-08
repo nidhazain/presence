@@ -84,10 +84,9 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
   double _parseTotalHours(String totalHours) {
   try {
     if (totalHours.contains("day")) {
-      // Handle cases like "-1 day, 15:00:00"
       final parts = totalHours.split(",");
-      final dayPart = parts[0].trim(); // "-1 day"
-      final timePart = parts[1].trim(); // "15:00:00"
+      final dayPart = parts[0].trim(); 
+      final timePart = parts[1].trim(); 
 
       final days = double.parse(dayPart.split(" ")[0]); // -1
       final timeComponents = timePart.split(":");
@@ -126,10 +125,10 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const CustomTitleText8(text: 'Attendance Summary'),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: CustomTitleText20(text: currentMonth),
-                ),
+                // Padding(
+                //   padding: const EdgeInsets.all(8.0),
+                //   child: CustomTitleText20(text: currentMonth),
+                // ),
               ],
             ),
             Card(
@@ -150,7 +149,7 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
                         'Leaves',
                         widget.employee.approvedLeaves == 0
                             ? '-'
-                            : '${widget.employee.approvedLeaves} days'),
+                            : '${widget.employee.absentDays} days'),
                     _buildSummaryRow('Overtime',
                         _formatOvertime(widget.employee.totalOvertime)),
                   ],

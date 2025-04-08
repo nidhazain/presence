@@ -36,21 +36,12 @@ class _RequestAttendanceDialogState extends State<RequestAttendanceDialog> {
   void initState() {
     super.initState();
     _loadStoredAddress();
-    final DateTime now = DateTime.now();
-    
-    final String displayFormattedDate = _displayDateFormat.format(now);
-    
-    dateController = TextEditingController(text: displayFormattedDate);
+    dateController = TextEditingController(text: _displayDateFormat.format(DateTime.now()));
   }
 
-  String getBackendFormattedDate() {
-    try {
-      final DateTime date = _displayDateFormat.parse(dateController.text);
-      return _backendDateFormat.format(date);
-    } catch (e) {
-      return _backendDateFormat.format(DateTime.now());
-    }
-  }
+ String getBackendFormattedDate() {
+  return _backendDateFormat.format(DateTime.now());
+}
 
   Future<void> _captureImage() async {
     final pickedFile =
@@ -76,7 +67,7 @@ class _RequestAttendanceDialogState extends State<RequestAttendanceDialog> {
   if (_formKey.currentState?.validate() ?? false) {
     try {
       Map<String, dynamic> requestData = {
-        'date': getBackendFormattedDate(), 
+        'date': _backendDateFormat.format(DateTime.now()),  
         'check_in': checkInController.text,
         'check_out': checkOutController.text,
         'work_type': workTypeController.text,
@@ -101,11 +92,9 @@ class _RequestAttendanceDialogState extends State<RequestAttendanceDialog> {
         Navigator.of(context).pop();
       }
     } catch (e) {
-      // Handle backend validation errors
       String errorMessage = 'Failed to submit attendance request';
       
       if (e is Map<String, dynamic>) {
-        // Handle structured error response from backend
         if (e.containsKey('error')) {
           errorMessage = e['error'].toString();
         } else if (e.containsKey('detail')) {
@@ -121,7 +110,6 @@ class _RequestAttendanceDialogState extends State<RequestAttendanceDialog> {
         errorMessage = 'Cannot request attendance for dates older than 30 days.';
       }
 
-      // Show error dialog
       await showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -277,39 +265,23 @@ String? _validateCheckOutTime(String? value) {
 }
 
 
-  // Add date picker field
-  Widget _buildDateField() {
-    return TextFormField(
-      controller: dateController,
-      readOnly: true,
-      validator: ValidationHelper.validateField,
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: primary.withOpacity(.05),
-        contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-        border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none),
-        suffixIcon: Icon(Icons.calendar_today, color: Colors.grey, size: 20),
-        hintText: 'Select Date',
+ Widget _buildDateField() {
+  return TextFormField(
+    controller: dateController,
+    readOnly: true,
+    enabled: false, // This makes it appear disabled
+    decoration: InputDecoration(
+      filled: true,
+      fillColor: Colors.grey[200], // Use a grey color to indicate disabled state
+      contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
       ),
-      onTap: () async {
-  final DateTime now = DateTime.now();
-  final DateTime? picked = await showDatePicker(
-    context: context,
-    initialDate: now,
-    firstDate: DateTime(now.year - 1),
-    lastDate: now,
+      // Remove the calendar icon since it's not interactive
+    ),
   );
-  if (picked != null) {
-    setState(() {
-      dateController.text = _displayDateFormat.format(picked);
-    });
-  }
-},
-
-    );
-  }
+}
 
  Widget _buildTimeField(TextEditingController controller, String hintText) {
   String? validator(String? value) {
@@ -499,8 +471,10 @@ void _clearForm() {
           SizedBox(height: 8),
           ElevatedButton(
             onPressed: () => setState(() => _imageFile = null),
-            child: Text("Clear Image"),
+            child: Text("Clear Image",),
             style: ElevatedButton.styleFrom(
+              backgroundColor: primary,
+              foregroundColor: Colors.white,
               minimumSize: Size(150, 36),
             ),
           ),
@@ -512,6 +486,8 @@ void _clearForm() {
       icon: Icon(Icons.camera_alt),
       label: Text('Capture Image'),
       style: ElevatedButton.styleFrom(
+        backgroundColor: primary,
+        foregroundColor: Colors.white,
         minimumSize: Size(150, 40),
       ),
     );

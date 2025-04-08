@@ -63,11 +63,13 @@ class OvertimeHistoryItem {
   final String date;
   final double hours;
   final String reason;
+  final String status;
 
   OvertimeHistoryItem({
     required this.date,
     required this.hours,
-    required this.reason
+    required this.reason,
+    required this.status
   });
 
   factory OvertimeHistoryItem.fromJson(Map<String, dynamic> json) {
@@ -75,6 +77,7 @@ class OvertimeHistoryItem {
       date: json['date'] as String? ?? 'N/A',
       hours: (json['assigned_hours'] as num?)?.toDouble() ?? 0.0,
       reason: json['reason'] as String? ?? 'N/A',
+      status: json['status']
     );
   }
 }

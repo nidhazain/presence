@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:presence/src/constants/colors.dart';
+import 'package:presence/src/features/api/employee/policyapi.dart';
 import 'package:presence/src/features/api/url.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:presence/src/features/api/api.dart'; // Import your API service
 
 class Hrshift extends StatefulWidget {
   const Hrshift({super.key});
@@ -17,32 +19,52 @@ class _HrshiftState extends State<Hrshift> {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
   bool _isLoading = false;
+  bool _isLoadingHolidays = false;
   String _errorMessage = '';
-  
-  // Replace with your actual API base URL
   
   // Store fetched shift data
   Map<DateTime, Map<String, String>> shiftRoster = {};
   
-  // Store fetched holiday data (you might want to fetch this from another API endpoint)
-  final Map<DateTime, List<String>> holidays = {
-    DateTime(2025, 1, 26): ['Republic Day'],
-    DateTime(2025, 8, 15): ['Independence Day'],
-    DateTime(2025, 3, 31): ['Eid'],
-    DateTime(2025, 4, 14): ['Tamil New Year'],
-    DateTime(2025, 12, 25): ['Christmas'],
-  };
+  // Store fetched holiday data
+  Map<DateTime, String> holidays = {};
 
   @override
   void initState() {
     super.initState();
     _selectedDay = DateTime.now();
     _fetchShiftsForDate(_selectedDay!);
+    _fetchHolidays(); // Fetch holidays when the screen loads
   }
 
   /// Normalizes date by removing time portion for comparison
   DateTime _normalizeDate(DateTime date) {
     return DateTime(date.year, date.month, date.day);
+  }
+
+  /// Fetches public holidays from the API
+  Future<void> _fetchHolidays() async {
+    setState(() {
+      _isLoadingHolidays = true;
+    });
+
+    try {
+      final holidaysData = await PolicyService.fetchPublicHolidays();
+      setState(() {
+        holidays.clear();
+        for (var holiday in holidaysData) {
+          final date = DateTime.parse(holiday['date']);
+          holidays[_normalizeDate(date)] = holiday['name'];
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error fetching holidays: ${e.toString()}';
+      });
+    } finally {
+      setState(() {
+        _isLoadingHolidays = false;
+      });
+    }
   }
 
   /// Fetches shifts for a specific date from the API
@@ -64,7 +86,6 @@ class _HrshiftState extends State<Hrshift> {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         
-
         final Map<String, String> shiftsForDate = {};
         
         for (var assignment in data['assignments']) {
@@ -128,7 +149,7 @@ class _HrshiftState extends State<Hrshift> {
             SizedBox(height: screenHeight * 0.02),
             _buildCalendar(),
             SizedBox(height: screenHeight * 0.02),
-            if (_isLoading) _buildLoadingIndicator(),
+            if (_isLoading || _isLoadingHolidays) _buildLoadingIndicator(),
             if (_errorMessage.isNotEmpty) _buildErrorWidget(),
             if (_selectedDay != null && !_isLoading && _errorMessage.isEmpty) 
               _buildSelectedDayCard(),
@@ -196,6 +217,7 @@ class _HrshiftState extends State<Hrshift> {
         defaultBuilder: (context, day, focusedDay) {
           bool hasShifts = _hasShiftRoster(day);
           bool isHoliday = _isHoliday(day);
+          final holidayName = holidays[_normalizeDate(day)];
           
           if (isHoliday) {
             return Container(
@@ -205,9 +227,22 @@ class _HrshiftState extends State<Hrshift> {
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.red, width: 1.5),
               ),
-              child: Text(
-                day.day.toString(),
-                style: const TextStyle(color: Colors.red),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    day.day.toString(),
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                  if (holidayName != null)
+                    Text(
+                      holidayName.split(' ')[0],
+                      style: const TextStyle(
+                        color: Colors.red,
+                        fontSize: 8,
+                      ),
+                    ),
+                ],
               ),
             );
           } else if (hasShifts) {
@@ -223,15 +258,29 @@ class _HrshiftState extends State<Hrshift> {
           return null;
         },
         holidayBuilder: (context, day, focusedDay) {
+          final holidayName = holidays[_normalizeDate(day)];
           return Container(
             margin: const EdgeInsets.all(4.0),
             alignment: Alignment.center,
-            child: Text(
-              day.day.toString(),
-              style: const TextStyle(
-                color: Colors.red, 
-                fontWeight: FontWeight.bold
-              ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  day.day.toString(),
+                  style: const TextStyle(
+                    color: Colors.red, 
+                    fontWeight: FontWeight.bold
+                  ),
+                ),
+                if (holidayName != null)
+                  Text(
+                    holidayName.split(' ')[0],
+                    style: const TextStyle(
+                      color: Colors.red,
+                      fontSize: 8,
+                    ),
+                  ),
+              ],
             ),
           );
         },
@@ -243,6 +292,8 @@ class _HrshiftState extends State<Hrshift> {
   }
 
   Widget _buildSelectedDayCard() {
+    final holidayName = holidays[_normalizeDate(_selectedDay!)];
+    
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Card.outlined(
@@ -271,7 +322,7 @@ class _HrshiftState extends State<Hrshift> {
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: Text(
-                    "Holiday: ${holidays[_normalizeDate(_selectedDay!)]?.join(', ')}",
+                    "Holiday: ${holidayName ?? ''}",
                     style: const TextStyle(
                       color: Colors.red, 
                       fontWeight: FontWeight.bold,

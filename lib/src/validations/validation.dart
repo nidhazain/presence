@@ -19,24 +19,27 @@ class ValidationHelper {
   }
 
   // Validation for password field
-  static String? validatePassword(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Please enter a password';
-    }
-    if (value.length < 6) {
-      return 'Your password must be at least 6 characters long';
-    }
-    if (!RegExp(r'(?=.*[A-Za-z])').hasMatch(value)) {
-      return 'Your password must include at least one letter';
-    }
-    if (!RegExp(r'(?=.*\d)').hasMatch(value)) {
-      return 'Your password must include at least one number';
-    }
-    if (!RegExp(r'(?=.*[!\\$@%])').hasMatch(value)) {
-      return 'Your password must include at least one special character (!\$@%)';
-    }
-    return null;
+static String? validatePassword(String? value) {
+  if (value == null || value.isEmpty) {
+    return 'Please enter a password';
   }
+  if (value.length < 6) {
+    return 'Must be at least 6 characters long';
+  }
+  if (!RegExp(r'(?=.*[A-Za-z])').hasMatch(value)) {
+    return 'Must include at least one letter';
+  }
+  if (!RegExp(r'(?=.*[A-Z])').hasMatch(value)) {
+    return 'Must include at least one uppercase letter';
+  }
+  if (!RegExp(r'(?=.*\d)').hasMatch(value)) {
+    return 'Must include at least one number';
+  }
+  if (!RegExp(r'(?=.*[!\\$@%])').hasMatch(value)) {
+    return 'Must include at least one special character (!\$@%)';
+  }
+  return null;
+}
 
   // Validation for confirming password match
   static String? validateConfirmPassword(String? value, String? originalPassword) {

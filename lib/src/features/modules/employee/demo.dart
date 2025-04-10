@@ -2331,301 +2331,1186 @@
 //   }
 // }
 
-import 'package:flutter/material.dart';
-import 'package:presence/src/common_widget/custom_card.dart';
-import 'package:presence/src/common_widget/submitbutton.dart';
-import 'package:presence/src/common_widget/text_tile.dart';
-import 'package:presence/src/constants/colors.dart';
-import 'package:intl/intl.dart'; // Add this import for date formatting
+// import 'package:flutter/material.dart';
+// import 'package:presence/src/common_widget/custom_card.dart';
+// import 'package:presence/src/common_widget/submitbutton.dart';
+// import 'package:presence/src/common_widget/text_tile.dart';
+// import 'package:presence/src/constants/colors.dart';
+// import 'package:intl/intl.dart'; // Add this import for date formatting
 
-class LeaveRequestPage extends StatefulWidget {
+// class LeaveRequestPage extends StatefulWidget {
+//   @override
+//   _LeaveRequestPageState createState() => _LeaveRequestPageState();
+// }
+
+// class _LeaveRequestPageState extends State<LeaveRequestPage> {
+//   List<Map<String, dynamic>> leaveRequests = [
+//     {
+//       'type': 'Casual Leave',
+//       'startDate': '2025-03-12',
+//       'endDate': '2025-03-12',
+//       'reason': 'Family Function',
+//       'status': 'pending',
+//       'rejectReason': ''
+//     },
+//     {
+//       'type': 'Earned Leave',
+//       'startDate': '2025-03-15',
+//       'endDate': '2025-03-16',
+//       'reason': 'Medical Checkup',
+//       'status': 'accepted',
+//       'rejectReason': ''
+//     },
+//     {
+//       'type': 'Restricted Leave',
+//       'startDate': '2025-03-20',
+//       'endDate': '2025-03-20',
+//       'reason': 'Religious Festival',
+//       'status': 'rejected',
+//       'rejectReason': 'Not eligible for this leave type'
+//     },
+//     {
+//       'type': 'Casual Leave',
+//       'startDate': '2025-03-25',
+//       'endDate': '2025-03-26',
+//       'reason': 'Personal Work',
+//       'status': 'pending',
+//       'rejectReason': ''
+//     },
+//   ];
+
+//   final TextEditingController _rejectReasonController = TextEditingController();
+
+//   // Format date from yyyy-MM-dd to dd MMM yyyy
+//   String formatDate(String dateString) {
+//     try {
+//       final DateTime date = DateTime.parse(dateString);
+//       return DateFormat('dd MMM yyyy').format(date);
+//     } catch (e) {
+//       return dateString; // Return original if parsing fails
+//     }
+//   }
+
+//   Color getStatusColor(String status) {
+//     if (status == 'accepted') return dgreen;
+//     if (status == 'rejected') return red;
+//     return Colors.orange;
+//   }
+
+//   void updateStatus(int index, String status, {String rejectReason = ''}) {
+//     setState(() {
+//       leaveRequests[index]['status'] = status;
+//       if (status == 'rejected') {
+//         leaveRequests[index]['rejectReason'] = rejectReason;
+//       }
+//       sortRequests();
+//     });
+//   }
+
+//   void sortRequests() {
+//     leaveRequests.sort((a, b) {
+//       if (a['status'] == 'pending' && b['status'] != 'pending') {
+//         return -1;
+//       } else if (a['status'] != 'pending' && b['status'] == 'pending') {
+//         return 1;
+//       }
+//       return 0;
+//     });
+//   }
+
+//   void showRejectConfirmation(int index) {
+//     _rejectReasonController.clear();
+
+//     showDialog(
+//       context: context,
+//       builder: (BuildContext context) {
+//         return AlertDialog(
+//           title: Row(
+//             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//             children: [
+//               Flexible(child: CustomTitleText8(text: 'Confirm Rejection')),
+//               IconButton(
+//                 icon: Icon(Icons.close, color: Colors.grey),
+//                 onPressed: () {
+//                   Navigator.of(context).pop();
+//                 },
+//               ),
+//             ],
+//           ),
+//           content: Column(
+//             mainAxisSize: MainAxisSize.min,
+//             children: [
+//               Text("Are you sure you want to reject this leave request?"),
+//               SizedBox(height: 16),
+//               TextField(
+//                 controller: _rejectReasonController,
+//                 decoration: InputDecoration(
+//                   labelText: "Reason for rejection",
+//                   border: OutlineInputBorder(),
+//                   alignLabelWithHint: true,
+//                 ),
+//                 maxLines: 2,
+//               ),
+//             ],
+//           ),
+//           actions: [
+//             CustomButton(
+//               text: 'confirm',
+//               onPressed: () {
+//                 updateStatus(index, 'rejected',
+//                     rejectReason: _rejectReasonController.text);
+//                 Navigator.of(context).pop();
+//               },
+//             )
+//           ],
+//         );
+//       },
+//     );
+//   }
+
+//   void _showFullSizeImage(BuildContext context, String imageUrl) {
+//     showDialog(
+//       context: context,
+//       builder: (_) => Dialog(
+//         backgroundColor: Colors.black,
+//         child: InteractiveViewer(
+//           child: Image.network(imageUrl),
+//         ),
+//       ),
+//     );
+//   }
+
+//   void showLeaveDetailsDialog(
+//       BuildContext context, Map<String, dynamic> leave) {
+//     showDialog(
+//       context: context,
+//       builder: (context) => AlertDialog(
+//         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+//         title: Row(
+//           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//           children: [
+//             CustomTitleText8(text: 'Leave Details'),
+//             CloseButton(onPressed: () => Navigator.pop(context)),
+//           ],
+//         ),
+//         content: SizedBox(
+//           width: double.maxFinite,
+//           child: SingleChildScrollView(
+//             child: Column(
+//               crossAxisAlignment: CrossAxisAlignment.start,
+//               children: [
+//                 CustomTitleText10(text: "Leave Type:"),
+//                 textfield(data: leave['type']),
+//                 CustomTitleText10(text: "Period:"),
+//                 textfield(
+//                     data:
+//                         "${formatDate(leave['startDate'])} - ${formatDate(leave['endDate'])}"),
+//                 CustomTitleText10(text: "Reason:"),
+//                 textfield(data: leave['reason']),
+//                 if (leave['status'] != 'pending') ...[
+//                   CustomTitleText10(text: "Status:"),
+//                   textfield(
+//                     data: leave['status'].toUpperCase(),
+//                   ),
+//                 ],
+//                 if (leave['status'] == 'rejected' &&
+//                     leave['rejectReason'] != null &&
+//                     leave['rejectReason'].isNotEmpty) ...[
+//                   CustomTitleText10(text: "Rejection Reason:"),
+//                   textfield(data: leave['rejectReason']),
+//                 ],
+//                 if (leave['attachmentUrl'] != null &&
+//                     leave['attachmentUrl'].isNotEmpty) ...[
+//                   CustomTitleText10(text: "Attachment:"),
+//                   const SizedBox(height: 10),
+//                   GestureDetector(
+//                     onTap: () =>
+//                         _showFullSizeImage(context, leave['attachmentUrl']),
+//                     child: Container(
+//                       decoration: BoxDecoration(
+//                         border: Border.all(color: Colors.grey.shade300),
+//                         borderRadius: BorderRadius.circular(8),
+//                       ),
+//                       child: ClipRRect(
+//                         borderRadius: BorderRadius.circular(8),
+//                         child: Image.network(
+//                           leave['attachmentUrl'],
+//                           height: 200,
+//                           width: double.infinity,
+//                           fit: BoxFit.cover,
+//                           errorBuilder: (context, error, stackTrace) =>
+//                               Container(
+//                             height: 200,
+//                             width: double.infinity,
+//                             color: Colors.grey.shade200,
+//                             alignment: Alignment.center,
+//                             child: Text('Failed to load image'),
+//                           ),
+//                         ),
+//                       ),
+//                     ),
+//                   ),
+//                 ],
+//               ],
+//             ),
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     sortRequests();
+//     return Scaffold(
+//       backgroundColor: Colors.white,
+//      appBar:
+//           AppBar(title: CustomTitleText8(text: 'Leave Requests'), backgroundColor: Colors.white),
+//       body: ListView.separated(
+//         itemCount: leaveRequests.length,
+//         separatorBuilder: (context, index) => Divider(
+//             color: primary.withOpacity(.3),
+//             height: 1),
+//         itemBuilder: (context, index) {
+//           var leave = leaveRequests[index];
+//           return GestureDetector(
+//             onTap: () => showLeaveDetailsDialog(context, leave),
+//             child: Container(
+//               margin: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+//               padding: EdgeInsets.all(10),
+//               child: Row(
+//                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//                 children: [
+//                   Column(
+//                     crossAxisAlignment: CrossAxisAlignment.start,
+//                     children: [
+//                       CustomTitleText10(text: leave['type']),
+//                       SizedBox(height: 5),
+//                       CustomTitleText20(
+//                           text:
+//                               "${formatDate(leave['startDate'])} - ${formatDate(leave['endDate'])}")
+//                     ],
+//                   ),
+//                   leave['status'] == 'pending'
+//                       ? Row(
+//                           children: [
+//                             IconButton(
+//                               icon: Icon(Icons.check, color: dgreen),
+//                               onPressed: () => updateStatus(index, 'accepted'),
+//                             ),
+//                             IconButton(
+//                               icon: Icon(Icons.close, color: red),
+//                               onPressed: () => showRejectConfirmation(index),
+//                             ),
+//                           ],
+//                         )
+//                       : Row(
+//                           children: [
+//                             CircleAvatar(
+//                               backgroundColor: getStatusColor(leave['status']),
+//                               radius: 5,
+//                             ),
+//                             SizedBox(width: 10),
+//                             CustomTitleText9(text: leave['status']),
+//                           ],
+//                         ),
+//                 ],
+//               ),
+//             ),
+//           );
+//         },
+//       ),
+//     );
+//   }
+
+//   @override
+//   void dispose() {
+//     _rejectReasonController.dispose();
+//     super.dispose();
+//   }
+// }
+
+import 'package:flutter/material.dart';
+import 'package:presence/src/constants/colors.dart';
+import 'package:presence/src/features/api/employee/policyapi.dart';
+import 'package:presence/src/features/api/url.dart';
+import 'package:table_calendar/table_calendar.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:presence/src/features/api/api.dart';
+
+class Hrshift extends StatefulWidget {
+  const Hrshift({super.key});
+
   @override
-  _LeaveRequestPageState createState() => _LeaveRequestPageState();
+  _HrshiftState createState() => _HrshiftState();
 }
 
-class _LeaveRequestPageState extends State<LeaveRequestPage> {
-  List<Map<String, dynamic>> leaveRequests = [
-    {
-      'type': 'Casual Leave',
-      'startDate': '2025-03-12',
-      'endDate': '2025-03-12',
-      'reason': 'Family Function',
-      'status': 'pending',
-      'rejectReason': ''
-    },
-    {
-      'type': 'Earned Leave',
-      'startDate': '2025-03-15',
-      'endDate': '2025-03-16',
-      'reason': 'Medical Checkup',
-      'status': 'accepted',
-      'rejectReason': ''
-    },
-    {
-      'type': 'Restricted Leave',
-      'startDate': '2025-03-20',
-      'endDate': '2025-03-20',
-      'reason': 'Religious Festival',
-      'status': 'rejected',
-      'rejectReason': 'Not eligible for this leave type'
-    },
-    {
-      'type': 'Casual Leave',
-      'startDate': '2025-03-25',
-      'endDate': '2025-03-26',
-      'reason': 'Personal Work',
-      'status': 'pending',
-      'rejectReason': ''
-    },
-  ];
+class _HrshiftState extends State<Hrshift> {
+  CalendarFormat _calendarFormat = CalendarFormat.month;
+  DateTime _focusedDay = DateTime.now();
+  DateTime? _selectedDay;
+  bool _isLoading = false;
+  bool _isLoadingHolidays = false;
+  String _errorMessage = '';
+  
+  // Store assigned dates and shift details
+  Set<DateTime> _assignedDates = {};
+  List<dynamic> _shiftDetails = [];
+  final Color _assignedColor = const Color(0xFF4CAF50); // Green color for assigned dates
+  
+  // Store fetched holiday data
+  Map<DateTime, String> _holidays = {};
 
-  final TextEditingController _rejectReasonController = TextEditingController();
+  @override
+  void initState() {
+    super.initState();
+    _selectedDay = DateTime.now();
+    _fetchHolidays();
+    _fetchShiftsForMonth(_focusedDay);
+  }
 
-  // Format date from yyyy-MM-dd to dd MMM yyyy
-  String formatDate(String dateString) {
+  /// Normalizes date by removing time portion for comparison
+  DateTime _normalizeDate(DateTime date) {
+    return DateTime(date.year, date.month, date.day);
+  }
+
+  /// Formats date as YYYY-MM-DD
+  String _formatDate(DateTime date) {
+    return "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+  }
+
+  /// Fetches public holidays from the API
+  Future<void> _fetchHolidays() async {
+    setState(() {
+      _isLoadingHolidays = true;
+    });
+
     try {
-      final DateTime date = DateTime.parse(dateString);
-      return DateFormat('dd MMM yyyy').format(date);
+      final holidaysData = await PolicyService.fetchPublicHolidays();
+      setState(() {
+        _holidays.clear();
+        for (var holiday in holidaysData) {
+          final date = DateTime.parse(holiday['date']);
+          _holidays[_normalizeDate(date)] = holiday['name'];
+        }
+      });
     } catch (e) {
-      return dateString; // Return original if parsing fails
+      setState(() {
+        _errorMessage = 'Error fetching holidays: ${e.toString()}';
+      });
+    } finally {
+      setState(() {
+        _isLoadingHolidays = false;
+      });
     }
   }
 
-  Color getStatusColor(String status) {
-    if (status == 'accepted') return dgreen;
-    if (status == 'rejected') return red;
-    return Colors.orange;
-  }
-
-  void updateStatus(int index, String status, {String rejectReason = ''}) {
+  /// Fetches shifts for a date range (month) from the API
+  Future<void> _fetchShiftsForMonth(DateTime focusedDay) async {
     setState(() {
-      leaveRequests[index]['status'] = status;
-      if (status == 'rejected') {
-        leaveRequests[index]['rejectReason'] = rejectReason;
-      }
-      sortRequests();
+      _isLoading = true;
+      _errorMessage = '';
     });
-  }
 
-  void sortRequests() {
-    leaveRequests.sort((a, b) {
-      if (a['status'] == 'pending' && b['status'] != 'pending') {
-        return -1;
-      } else if (a['status'] != 'pending' && b['status'] == 'pending') {
-        return 1;
+    try {
+      final firstDay = DateTime(focusedDay.year, focusedDay.month, 1);
+      final lastDay = DateTime(focusedDay.year, focusedDay.month + 1, 0);
+      
+      final response = await http.get(
+        Uri.parse('$BASE_URL/shifthrcolor/?start_date=${_formatDate(firstDay)}&end_date=${_formatDate(lastDay)}'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${await TokenService.getAccessToken()}',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        
+        setState(() {
+          _assignedDates.clear();
+          _shiftDetails = data['shift_details'] ?? [];
+          
+          // Convert date strings to DateTime objects
+          for (var date in data['assigned_dates'] ?? []) {
+            _assignedDates.add(_normalizeDate(DateTime.parse(date['date'])));
+          }
+        });
+      } else {
+        setState(() {
+          _errorMessage = 'Failed to load shifts: ${response.statusCode}';
+        });
       }
-      return 0;
-    });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error fetching shifts: ${e.toString()}';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
-  void showRejectConfirmation(int index) {
-    _rejectReasonController.clear();
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(child: CustomTitleText8(text: 'Confirm Rejection')),
-              IconButton(
-                icon: Icon(Icons.close, color: Colors.grey),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text("Are you sure you want to reject this leave request?"),
-              SizedBox(height: 16),
-              TextField(
-                controller: _rejectReasonController,
-                decoration: InputDecoration(
-                  labelText: "Reason for rejection",
-                  border: OutlineInputBorder(),
-                  alignLabelWithHint: true,
-                ),
-                maxLines: 2,
-              ),
-            ],
-          ),
-          actions: [
-            CustomButton(
-              text: 'confirm',
-              onPressed: () {
-                updateStatus(index, 'rejected',
-                    rejectReason: _rejectReasonController.text);
-                Navigator.of(context).pop();
-              },
-            )
-          ],
-        );
-      },
-    );
+  /// Gets shift details for a specific day
+  List<dynamic> _getShiftsForDay(DateTime day) {
+    final normalizedDate = _normalizeDate(day);
+    return _shiftDetails.where((shift) {
+      return _normalizeDate(DateTime.parse(shift['date'])) == normalizedDate;
+    }).toList();
   }
 
-  void _showFullSizeImage(BuildContext context, String imageUrl) {
-    showDialog(
-      context: context,
-      builder: (_) => Dialog(
-        backgroundColor: Colors.black,
-        child: InteractiveViewer(
-          child: Image.network(imageUrl),
-        ),
-      ),
-    );
+  /// Checks if a day is a holiday
+  bool _isHoliday(DateTime day) {
+    return _holidays.containsKey(_normalizeDate(day));
   }
 
-  void showLeaveDetailsDialog(
-      BuildContext context, Map<String, dynamic> leave) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            CustomTitleText8(text: 'Leave Details'),
-            CloseButton(onPressed: () => Navigator.pop(context)),
-          ],
-        ),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                CustomTitleText10(text: "Leave Type:"),
-                textfield(data: leave['type']),
-                CustomTitleText10(text: "Period:"),
-                textfield(
-                    data:
-                        "${formatDate(leave['startDate'])} - ${formatDate(leave['endDate'])}"),
-                CustomTitleText10(text: "Reason:"),
-                textfield(data: leave['reason']),
-                if (leave['status'] != 'pending') ...[
-                  CustomTitleText10(text: "Status:"),
-                  textfield(
-                    data: leave['status'].toUpperCase(),
-                  ),
-                ],
-                if (leave['status'] == 'rejected' &&
-                    leave['rejectReason'] != null &&
-                    leave['rejectReason'].isNotEmpty) ...[
-                  CustomTitleText10(text: "Rejection Reason:"),
-                  textfield(data: leave['rejectReason']),
-                ],
-                if (leave['attachmentUrl'] != null &&
-                    leave['attachmentUrl'].isNotEmpty) ...[
-                  CustomTitleText10(text: "Attachment:"),
-                  const SizedBox(height: 10),
-                  GestureDetector(
-                    onTap: () =>
-                        _showFullSizeImage(context, leave['attachmentUrl']),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade300),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          leave['attachmentUrl'],
-                          height: 200,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Container(
-                            height: 200,
-                            width: double.infinity,
-                            color: Colors.grey.shade200,
-                            alignment: Alignment.center,
-                            child: Text('Failed to load image'),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
+  /// Checks if a day has shifts assigned
+  bool _hasShifts(DateTime day) {
+    return _assignedDates.contains(_normalizeDate(day));
   }
 
   @override
   Widget build(BuildContext context) {
-    sortRequests();
+    final double screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
-      backgroundColor: Colors.white,
-     appBar:
-          AppBar(title: CustomTitleText8(text: 'Leave Requests'), backgroundColor: Colors.white),
-      body: ListView.separated(
-        itemCount: leaveRequests.length,
-        separatorBuilder: (context, index) => Divider(
-            color: primary.withOpacity(.3),
-            height: 1),
-        itemBuilder: (context, index) {
-          var leave = leaveRequests[index];
-          return GestureDetector(
-            onTap: () => showLeaveDetailsDialog(context, leave),
-            child: Container(
-              margin: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              padding: EdgeInsets.all(10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CustomTitleText10(text: leave['type']),
-                      SizedBox(height: 5),
-                      CustomTitleText20(
-                          text:
-                              "${formatDate(leave['startDate'])} - ${formatDate(leave['endDate'])}")
-                    ],
+      appBar: AppBar(
+        title: const Text('HR Shift Calendar'),
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            SizedBox(height: screenHeight * 0.02),
+            _buildCalendar(),
+            SizedBox(height: screenHeight * 0.02),
+            if (_isLoading || _isLoadingHolidays) _buildLoadingIndicator(),
+            if (_errorMessage.isNotEmpty) _buildErrorWidget(),
+            if (_selectedDay != null && !_isLoading && _errorMessage.isEmpty) 
+              _buildSelectedDayCard(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingIndicator() {
+    return const Padding(
+      padding: EdgeInsets.all(16.0),
+      child: Center(child: CircularProgressIndicator()),
+    );
+  }
+
+  Widget _buildErrorWidget() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Text(
+        _errorMessage,
+        style: const TextStyle(color: Colors.red),
+      ),
+    );
+  }
+
+  Widget _buildCalendar() {
+    return TableCalendar(
+      focusedDay: _focusedDay,
+      firstDay: DateTime(2024, 1, 1),
+      lastDay: DateTime(2025, 12, 31),
+      calendarFormat: _calendarFormat,
+      onFormatChanged: (format) {
+        setState(() {
+          _calendarFormat = format;
+        });
+      },
+      onPageChanged: (focusedDay) {
+        setState(() {
+          _focusedDay = focusedDay;
+        });
+        _fetchShiftsForMonth(focusedDay);
+      },
+      selectedDayPredicate: (day) {
+        return isSameDay(_selectedDay, day);
+      },
+      onDaySelected: (selectedDay, focusedDay) {
+        setState(() {
+          _selectedDay = selectedDay;
+          _focusedDay = focusedDay;
+        });
+      },
+      calendarStyle: CalendarStyle(
+        todayDecoration: BoxDecoration(
+          color: primary,
+          shape: BoxShape.circle,
+        ),
+        selectedDecoration: BoxDecoration(
+          color: Colors.blueAccent,
+          shape: BoxShape.circle,
+        ),
+        holidayTextStyle: const TextStyle(color: Colors.red),
+        markerDecoration: BoxDecoration(
+          color: _assignedColor,
+          shape: BoxShape.circle,
+        ),
+      ),
+      calendarBuilders: CalendarBuilders(
+        defaultBuilder: (context, day, focusedDay) {
+          final isHoliday = _isHoliday(day);
+          final hasShifts = _hasShifts(day);
+          final holidayName = _holidays[_normalizeDate(day)];
+          
+          return Container(
+            margin: const EdgeInsets.all(4.0),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isHoliday 
+                  ? Colors.red.withOpacity(0.1)
+                  : (hasShifts ? _assignedColor.withOpacity(0.2) : null),
+              border: Border.all(
+                color: isHoliday 
+                    ? Colors.red 
+                    : (hasShifts ? _assignedColor : Colors.transparent),
+                width: 1.5,
+              ),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  day.day.toString(),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: isHoliday ? Colors.red : (hasShifts ? _assignedColor : null),
                   ),
-                  leave['status'] == 'pending'
-                      ? Row(
-                          children: [
-                            IconButton(
-                              icon: Icon(Icons.check, color: dgreen),
-                              onPressed: () => updateStatus(index, 'accepted'),
-                            ),
-                            IconButton(
-                              icon: Icon(Icons.close, color: red),
-                              onPressed: () => showRejectConfirmation(index),
-                            ),
-                          ],
-                        )
-                      : Row(
-                          children: [
-                            CircleAvatar(
-                              backgroundColor: getStatusColor(leave['status']),
-                              radius: 5,
-                            ),
-                            SizedBox(width: 10),
-                            CustomTitleText9(text: leave['status']),
-                          ],
-                        ),
-                ],
+                ),
+                if (isHoliday && holidayName != null)
+                  Text(
+                    holidayName.split(' ')[0],
+                    style: const TextStyle(
+                      color: Colors.red,
+                      fontSize: 8,
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
+        todayBuilder: (context, day, focusedDay) {
+          final isHoliday = _isHoliday(day);
+          final hasShifts = _hasShifts(day);
+          
+          return Container(
+            margin: const EdgeInsets.all(4.0),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isHoliday
+                  ? Colors.red.withOpacity(0.2)
+                  : (hasShifts ? _assignedColor.withOpacity(0.7) : primary.withOpacity(0.7)),
+              border: Border.all(
+                color: isHoliday ? Colors.red : (hasShifts ? _assignedColor : primary),
+                width: 1.5,
+              ),
+            ),
+            child: Text(
+              day.day.toString(),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          );
+        },
+        selectedBuilder: (context, day, focusedDay) {
+          final isHoliday = _isHoliday(day);
+          final hasShifts = _hasShifts(day);
+          
+          return Container(
+            margin: const EdgeInsets.all(4.0),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isHoliday 
+                  ? Colors.red.withOpacity(0.7) 
+                  : (hasShifts ? _assignedColor.withOpacity(0.7) : Colors.blueAccent),
+            ),
+            child: Text(
+              day.day.toString(),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
               ),
             ),
           );
         },
       ),
+      holidayPredicate: (day) => _isHoliday(day),
     );
   }
 
-  @override
-  void dispose() {
-    _rejectReasonController.dispose();
-    super.dispose();
+  Widget _buildSelectedDayCard() {
+    final shifts = _getShiftsForDay(_selectedDay!);
+    final isHoliday = _isHoliday(_selectedDay!);
+    final holidayName = _holidays[_normalizeDate(_selectedDay!)];
+    
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Card.outlined(
+        shape: RoundedRectangleBorder(
+          side: BorderSide(
+            color: isHoliday ? Colors.red : _assignedColor,
+            width: 1.5,
+          ),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        color: (isHoliday ? Colors.red : _assignedColor).withOpacity(.1),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ListTile(
+                title: Text(
+                  _selectedDay == _normalizeDate(DateTime.now())
+                      ? "Today's Shifts"
+                      : "Shifts on ${_selectedDay!.toLocal().toString().split(' ')[0]}",
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              if (isHoliday)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  child: Container(
+                    padding: const EdgeInsets.all(8.0),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.red),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.celebration, color: Colors.red),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            "Holiday: ${holidayName ?? ''}",
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              if (shifts.isNotEmpty)
+                ..._buildShiftSections(shifts)
+              else
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(
+                    isHoliday ? "No shifts on holiday" : "No shifts assigned",
+                    style: TextStyle(
+                      color: isHoliday ? Colors.red : Colors.grey,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildShiftSections(List<dynamic> shifts) {
+    // Group shifts by shift type
+    final Map<String, List<dynamic>> shiftsByType = {};
+    for (var shift in shifts) {
+      final type = shift['shift_type']?.toString() ?? 'General';
+      if (!shiftsByType.containsKey(type)) {
+        shiftsByType[type] = [];
+      }
+      shiftsByType[type]!.add(shift);
+    }
+
+    return shiftsByType.entries.map((entry) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: Text(
+              "${entry.key} Shift (${entry.value.length})",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: _assignedColor,
+                fontSize: 16,
+              ),
+            ),
+          ),
+          ...entry.value.map((shift) {
+            // Safely get employee name - check multiple possible fields
+            final employeeName = shift['employee_name']?.toString() ?? 
+                               shift['employee']?['name']?.toString() ?? 
+                               shift['user']?['name']?.toString() ?? 
+                               'Unknown Employee';
+            
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,  
+                leading: CircleAvatar(
+                  backgroundColor: _assignedColor.withOpacity(0.2),
+                  child: Text(
+                    employeeName.isNotEmpty 
+                        ? employeeName.substring(0, 1).toUpperCase()
+                        : '?',
+                    style: TextStyle(color: _assignedColor),
+                  ),
+                ),
+                title: Text(employeeName),
+                subtitle: Text(
+                  "${shift['start_time'] ?? '--:--'} - ${shift['end_time'] ?? '--:--'}",
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ),
+            );
+          }).toList(),
+          const Divider(height: 1),
+        ],
+      );
+    }).toList();
   }
 }
+
+
+
+
+
+// import 'package:flutter/material.dart';
+// import 'package:presence/src/constants/colors.dart';
+// import 'package:presence/src/features/api/employee/policyapi.dart';
+// import 'package:presence/src/features/api/url.dart';
+// import 'package:table_calendar/table_calendar.dart';
+// import 'package:http/http.dart' as http;
+// import 'dart:convert';
+// import 'package:presence/src/features/api/api.dart';
+
+// class Hrshift extends StatefulWidget {
+//   const Hrshift({super.key});
+
+//   @override
+//   _HrshiftState createState() => _HrshiftState();
+// }
+
+// class _HrshiftState extends State<Hrshift> {
+//   CalendarFormat _calendarFormat = CalendarFormat.month;
+//   DateTime _focusedDay = DateTime.now();
+//   DateTime? _selectedDay;
+//   bool _isLoading = false;
+//   bool _isLoadingHolidays = false;
+//   String _errorMessage = '';
+  
+//   // Store assigned dates and shift details
+//   Set<DateTime> _assignedDates = {};
+//   List<dynamic> _shiftDetails = [];
+//   Map<DateTime, String> holidays = {};
+
+//   // Color for assigned dates (matches backend)
+//   final Color _assignedColor = const Color(0xFF4CAF50); // Green
+
+//   @override
+//   void initState() {
+//     super.initState();
+//     _selectedDay = DateTime.now();
+//     _fetchHolidays();
+//     _fetchShiftsForRange(
+//       DateTime(_focusedDay.year, _focusedDay.month, 1),
+//       DateTime(_focusedDay.year, _focusedDay.month + 1, 0),
+//     );
+//   }
+
+//   DateTime _normalizeDate(DateTime date) {
+//     return DateTime(date.year, date.month, date.day);
+//   }
+
+//   String _formatDate(DateTime date) {
+//     return "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+//   }
+
+//   Future<void> _fetchHolidays() async {
+//     setState(() {
+//       _isLoadingHolidays = true;
+//     });
+
+//     try {
+//       final holidaysData = await PolicyService.fetchPublicHolidays();
+//       setState(() {
+//         holidays.clear();
+//         for (var holiday in holidaysData) {
+//           final date = DateTime.parse(holiday['date']);
+//           holidays[_normalizeDate(date)] = holiday['name'];
+//         }
+//       });
+//     } catch (e) {
+//       setState(() {
+//         _errorMessage = 'Error fetching holidays: ${e.toString()}';
+//       });
+//     } finally {
+//       setState(() {
+//         _isLoadingHolidays = false;
+//       });
+//     }
+//   }
+
+//   Future<void> _fetchShiftsForRange(DateTime start, DateTime end) async {
+//     setState(() {
+//       _isLoading = true;
+//       _errorMessage = '';
+//     });
+
+//     try {
+//       String? token = await TokenService.getAccessToken();
+//       final response = await http.get(
+//         Uri.parse('$BASE_URL/shifthrcolor/?start_date=${_formatDate(start)}&end_date=${_formatDate(end)}'),
+//         headers: {
+//           'Authorization': 'Bearer $token',
+//           'Content-Type': 'application/json',
+//         },
+//       );
+
+//       if (response.statusCode == 200) {
+//         final data = json.decode(response.body);
+//         setState(() {
+//           _assignedDates.clear();
+//           _shiftDetails = data['shift_details'] ?? [];
+          
+//           // Store all assigned dates
+//           for (var date in data['assigned_dates'] ?? []) {
+//             final dateTime = DateTime.parse(date['date']);
+//             _assignedDates.add(_normalizeDate(dateTime));
+//           }
+//         });
+//       } else {
+//         setState(() {
+//           _errorMessage = 'Failed to load shifts: ${response.statusCode}';
+//         });
+//       }
+//     } catch (e) {
+//       setState(() {
+//         _errorMessage = 'Error fetching shifts: ${e.toString()}';
+//       });
+//     } finally {
+//       setState(() {
+//         _isLoading = false;
+//       });
+//     }
+//   }
+
+//   List<dynamic> _getShiftsForDay(DateTime day) {
+//     final normalizedDate = _normalizeDate(day);
+//     return _shiftDetails.where((shift) {
+//       return DateTime.parse(shift['date']) == normalizedDate;
+//     }).toList();
+//   }
+
+//   bool _isHoliday(DateTime day) {
+//     return holidays.containsKey(_normalizeDate(day));
+//   }
+
+//   bool _isAssignedDate(DateTime day) {
+//     return _assignedDates.contains(_normalizeDate(day));
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       backgroundColor: Colors.white,
+//       body: SingleChildScrollView(
+//         child: Column(
+//           children: [
+//             _buildCalendar(),
+//             if (_isLoading || _isLoadingHolidays) _buildLoadingIndicator(),
+//             if (_errorMessage.isNotEmpty) _buildErrorWidget(),
+//             if (_selectedDay != null && !_isLoading) _buildSelectedDayCard(),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+
+//   Widget _buildLoadingIndicator() {
+//     return const Padding(
+//       padding: EdgeInsets.all(16.0),
+//       child: Center(child: CircularProgressIndicator()),
+//     );
+//   }
+
+//   Widget _buildErrorWidget() {
+//     return Padding(
+//       padding: const EdgeInsets.all(16.0),
+//       child: Text(
+//         _errorMessage,
+//         style: const TextStyle(color: Colors.red),
+//       ),
+//     );
+//   }
+
+//   Widget _buildCalendar() {
+//     return TableCalendar(
+//       focusedDay: _focusedDay,
+//       firstDay: DateTime(2024, 1, 1),
+//       lastDay: DateTime(2025, 12, 31),
+//       calendarFormat: _calendarFormat,
+//       onFormatChanged: (format) {
+//         setState(() {
+//           _calendarFormat = format;
+//         });
+//       },
+//       onPageChanged: (focusedDay) {
+//         setState(() {
+//           _focusedDay = focusedDay;
+//         });
+//         _fetchShiftsForRange(
+//           DateTime(focusedDay.year, focusedDay.month, 1),
+//           DateTime(focusedDay.year, focusedDay.month + 1, 0),
+//         );
+//       },
+//       selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+//       onDaySelected: (selectedDay, focusedDay) {
+//         setState(() {
+//           _selectedDay = selectedDay;
+//           _focusedDay = focusedDay;
+//         });
+//       },
+//       calendarStyle: CalendarStyle(
+//         todayDecoration: BoxDecoration(
+//           color: primary,
+//           shape: BoxShape.circle,
+//         ),
+//         selectedDecoration: BoxDecoration(
+//           color: Colors.blueAccent,
+//           shape: BoxShape.circle,
+//         ),
+//         holidayTextStyle: const TextStyle(color: Colors.red),
+//       ),
+//       calendarBuilders: CalendarBuilders(
+//         defaultBuilder: (context, day, focusedDay) {
+//           final isHoliday = _isHoliday(day);
+//           final isAssigned = _isAssignedDate(day);
+//           final holidayName = holidays[_normalizeDate(day)];
+
+//           return Container(
+//             margin: const EdgeInsets.all(4.0),
+//             alignment: Alignment.center,
+//             child: Column(
+//               mainAxisAlignment: MainAxisAlignment.center,
+//               children: [
+//                 Text(
+//                   '${day.day}',
+//                   style: TextStyle(
+//                     fontWeight: FontWeight.bold,
+//                     color: isHoliday
+//                         ? Colors.red
+//                         : (isAssigned ? _assignedColor : null),
+//                   ),
+//                 ),
+//                 if (isHoliday && holidayName != null)
+//                   Text(
+//                     holidayName.split(' ')[0],
+//                     style: const TextStyle(
+//                       color: Colors.red,
+//                       fontSize: 8,
+//                     ),
+//                   ),
+//               ],
+//             ),
+//           );
+//         },
+//         todayBuilder: (context, day, focusedDay) {
+//           final isHoliday = _isHoliday(day);
+//           final isAssigned = _isAssignedDate(day);
+
+//           return Container(
+//             margin: const EdgeInsets.all(4.0),
+//             alignment: Alignment.center,
+//             decoration: BoxDecoration(
+//               shape: BoxShape.circle,
+//               color: isHoliday
+//                   ? Colors.red.withOpacity(0.3)
+//                   : (isAssigned ? _assignedColor.withOpacity(0.5) : primary.withOpacity(0.7)),
+//               border: Border.all(
+//                 color: isHoliday
+//                     ? Colors.red
+//                     : (isAssigned ? _assignedColor : primary),
+//                 width: 1.5,
+//               ),
+//             ),
+//             child: Text(
+//               '${day.day}',
+//               style: const TextStyle(
+//                 color: Colors.white,
+//                 fontWeight: FontWeight.bold,
+//               ),
+//             ),
+//           );
+//         },
+//         selectedBuilder: (context, day, focusedDay) {
+//           final isHoliday = _isHoliday(day);
+//           final isAssigned = _isAssignedDate(day);
+
+//           return Container(
+//             margin: const EdgeInsets.all(4.0),
+//             alignment: Alignment.center,
+//             decoration: BoxDecoration(
+//               shape: BoxShape.circle,
+//               color: isHoliday
+//                   ? Colors.red.withOpacity(0.7)
+//                   : (isAssigned ? _assignedColor.withOpacity(0.7) : Colors.blueAccent),
+//             ),
+//             child: Text(
+//               '${day.day}',
+//               style: const TextStyle(
+//                 color: Colors.white,
+//                 fontWeight: FontWeight.bold,
+//               ),
+//             ),
+//           );
+//         },
+//       ),
+//       //holidayPredicate: _isHoliday,
+//     );
+//   }
+
+//   Widget _buildSelectedDayCard() {
+//     final shifts = _getShiftsForDay(_selectedDay!);
+//     final isHoliday = _isHoliday(_selectedDay!);
+//     final holidayName = holidays[_normalizeDate(_selectedDay!)];
+//     final isAssigned = _isAssignedDate(_selectedDay!);
+
+//     return Padding(
+//       padding: const EdgeInsets.all(8.0),
+//       child: Card.outlined(
+//         shape: RoundedRectangleBorder(
+//           side: BorderSide(
+//             color: isHoliday ? Colors.red : (isAssigned ? _assignedColor : Colors.blue),
+//             width: 1.5,
+//           ),
+//           borderRadius: BorderRadius.circular(10),
+//         ),
+//         color: (isHoliday ? Colors.red : (isAssigned ? _assignedColor : blue))
+//             .withOpacity(.1),
+//         child: Padding(
+//           padding: const EdgeInsets.all(12.0),
+//           child: Column(
+//             crossAxisAlignment: CrossAxisAlignment.start,
+//             children: [
+//               ListTile(
+//                 title: Text(
+//                   isSameDay(_selectedDay!, DateTime.now())
+//                       ? "Today's Shifts"
+//                       : "Shifts on ${_selectedDay!.toLocal().toString().split(' ')[0]}",
+//                   style: const TextStyle(
+//                     fontWeight: FontWeight.bold,
+//                     fontSize: 16,
+//                   ),
+//                 ),
+//               ),
+//               if (isHoliday)
+//                 Padding(
+//                   padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+//                   child: Container(
+//                     padding: const EdgeInsets.all(8.0),
+//                     decoration: BoxDecoration(
+//                       color: Colors.red.withOpacity(0.1),
+//                       borderRadius: BorderRadius.circular(8),
+//                       border: Border.all(color: Colors.red),
+//                     ),
+//                     child: Row(
+//                       children: [
+//                         const Icon(Icons.celebration, color: Colors.red),
+//                         const SizedBox(width: 8),
+//                         Expanded(
+//                           child: Text(
+//                             "Holiday: ${holidayName ?? ''}",
+//                             style: const TextStyle(
+//                               color: Colors.red,
+//                               fontWeight: FontWeight.bold,
+//                             ),
+//                           ),
+//                         ),
+//                       ],
+//                     ),
+//                   ),
+//                 ),
+//               if (!isHoliday && !isAssigned)
+//                 const Padding(
+//                   padding: EdgeInsets.all(16.0),
+//                   child: Text(
+//                     "No shifts assigned for this date",
+//                     style: TextStyle(fontSize: 14),
+//                   ),
+//                 ),
+//               if (isAssigned) ..._buildShiftList(shifts),
+//             ],
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+
+//   List<Widget> _buildShiftList(List<dynamic> shifts) {
+//     // Group shifts by shift type
+//     final shiftGroups = <String, List<dynamic>>{};
+//     for (var shift in shifts) {
+//       final shiftType = shift['shift_type'] ?? 'Unknown';
+//       if (!shiftGroups.containsKey(shiftType)) {
+//         shiftGroups[shiftType] = [];
+//       }
+//       shiftGroups[shiftType]!.add(shift);
+//     }
+
+//     return shiftGroups.entries.map((entry) {
+//       return Padding(
+//         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+//         child: Column(
+//           crossAxisAlignment: CrossAxisAlignment.start,
+//           children: [
+//             Text(
+//               "${entry.key} Shift",
+//               style: TextStyle(
+//                 fontWeight: FontWeight.bold,
+//                 color: _assignedColor,
+//                 fontSize: 14,
+//               ),
+//             ),
+//             const SizedBox(height: 4),
+//             ...entry.value.map((shift) {
+//               return Padding(
+//                 padding: const EdgeInsets.only(bottom: 4.0),
+//                 child: Row(
+//                   children: [
+//                     const Icon(Icons.person, size: 16),
+//                     const SizedBox(width: 8),
+//                     Text(
+//                       shift['employee_name'] ?? 'Unknown',
+//                       style: const TextStyle(fontSize: 14),
+//                     ),
+//                     const Spacer(),
+//                     Text(
+//                       "${shift['start_time']} - ${shift['end_time']}",
+//                       style: const TextStyle(fontSize: 12),
+//                     ),
+//                   ],
+//                 ),
+//               );
+//             }).toList(),
+//             const Divider(),
+//           ],
+//         ),
+//       );
+//     }).toList();
+//   }
+// }

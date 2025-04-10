@@ -25,9 +25,15 @@ class _LeaveHistoryState extends State<LeaveHistory> {
     _leaveFuture = LeaveService.fetchLeaveHistory();
   }
 
+  void _reloadLeaveHistory() {
+    setState(() {
+      _leaveFuture = LeaveService.fetchLeaveHistory();
+    });
+  }
+
   Color getStatusColor(String status) {
     switch (status.toLowerCase()) {
-      case 'approved':
+      case 'approved' || 'accepted':
         return dgreen;
       case 'rejected':
         return red;
@@ -114,6 +120,10 @@ class _LeaveHistoryState extends State<LeaveHistory> {
                           : "Failed to cancel leave request."),
                     ),
                   );
+
+                  if (result) {
+                    _reloadLeaveHistory();
+                  }
                 }
               })
         ],
@@ -203,8 +213,6 @@ class _LeaveHistoryState extends State<LeaveHistory> {
             } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
               return _buildEmptyState();
             }
-
-            // Apply sorting by ID here
             final leaveList = _sortLeavesById(snapshot.data!);
             final totalItems = leaveList.length;
             final startIndex = (_currentPage - 1) * _itemsPerPage;
@@ -251,7 +259,7 @@ class _LeaveHistoryState extends State<LeaveHistory> {
                                   ),
                                   const SizedBox(width: 10),
                                   CustomTitleText9(text: leave.status),
-                                  if (leave.status.toLowerCase() == 'approved')
+                                  if (leave.status.toLowerCase() == 'approved' || leave.status.toLowerCase() == 'accepted')
                                     TextButton(
                                       onPressed: () => _showCancelConfirmation(
                                           context, leave),

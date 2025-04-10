@@ -364,7 +364,7 @@ Future<void> _fetchShiftsForRange(DateTime start, DateTime end) async {
     final normalizedDate = _normalizeDate(_selectedDay!);
     final String currentShift = _selectedDayShiftData?['shift_type']?.toString() ?? 
                               _shiftDataMap[normalizedDate] ?? 
-                              'No Shift';
+                              'No';
     final bool isToday = isSameDay(_selectedDay!, DateTime.now());
     final List<dynamic> colleaguesToShow = _colleagues.isNotEmpty 
         ? _colleagues 

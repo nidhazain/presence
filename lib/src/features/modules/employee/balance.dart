@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:presence/src/common_widget/custom_card.dart';
 import 'package:presence/src/common_widget/text_tile.dart';
 import 'package:presence/src/features/api/employee/balanceapi.dart';
+import 'package:intl/intl.dart';
 
 class BalancePage extends StatefulWidget {
   @override
@@ -15,6 +16,15 @@ class _BalancePageState extends State<BalancePage> {
   void initState() {
     super.initState();
     leaveFuture = BalanceService().fetchLeaveBalance();
+  }
+
+  String _formatDate(String dateStr) {
+    try {
+      final parsedDate = DateTime.parse(dateStr);
+      return DateFormat('dd MMM yyyy').format(parsedDate);
+    } catch (e) {
+      return dateStr; // fallback in case it's not in valid ISO format
+    }
   }
 
   void showBalanceDetailsDialog(BuildContext context, LeaveBalanceModel leave) {
@@ -44,9 +54,13 @@ class _BalancePageState extends State<BalancePage> {
                   itemCount: leave.dates.length,
                   itemBuilder: (context, index) {
                     final period = leave.dates[index];
-                    final leavePeriod = period['end_date'] != null
-                        ? "${period['start_date']} to ${period['end_date']}"
-                        : period['start_date'] ;
+                    final startDate = _formatDate(period['start_date']);
+                    final endDate = period['end_date'] != null
+                        ? _formatDate(period['end_date'])
+                        : null;
+                    final leavePeriod =
+                        endDate != null ? "$startDate to $endDate" : startDate;
+
                     return Padding(
                       padding: const EdgeInsets.symmetric(vertical: 4.0),
                       child: textfield(
@@ -60,64 +74,6 @@ class _BalancePageState extends State<BalancePage> {
       ),
     );
   }
-//   void showBalanceDetailsDialog(BuildContext context, LeaveBalanceModel leave) {
-//   showDialog(
-//     context: context,
-//     builder: (context) => AlertDialog(
-//       shape: RoundedRectangleBorder(
-//         borderRadius: BorderRadius.circular(15),
-//       ),
-//       title: Row(
-//         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//         children: [
-//           CustomTitleText8(text: leave.name),
-//           IconButton(
-//             icon: Icon(Icons.close, color: Colors.grey),
-//             onPressed: () {
-//               Navigator.of(context).pop();
-//             },
-//           ),
-//         ],
-//       ),
-//       content: Column(
-//         mainAxisSize: MainAxisSize.min,
-//         crossAxisAlignment: CrossAxisAlignment.start,
-//         children: [
-//           // Status Text added here
-//           Text(
-//             'Status: ${leave.status}',
-//             style: const TextStyle(
-//               fontWeight: FontWeight.bold,
-//             ),
-//           ),
-//           const SizedBox(height: 8),
-//           leave.dates.isNotEmpty
-//               ? SizedBox(
-//                   width: double.maxFinite,
-//                   child: ListView.builder(
-//                     shrinkWrap: true,
-//                     itemCount: leave.dates.length,
-//                     itemBuilder: (context, index) {
-//                       final period = leave.dates[index];
-//                       final leavePeriod = period['end_date'] != null
-//                           ? "${period['start_date']} to ${period['end_date']}"
-//                           : period['start_date'];
-//                       return Padding(
-//                         padding: const EdgeInsets.symmetric(vertical: 4.0),
-//                         child: textfield(
-//                           data: leavePeriod,
-//                         ),
-//                       );
-//                     },
-//                   ),
-//                 )
-//               : textfield(data: "No leave history available."),
-//         ],
-//       ),
-//     ),
-//   );
-// }
-
 
   @override
   Widget build(BuildContext context) {
@@ -174,7 +130,8 @@ class LeaveCardDynamic extends StatelessWidget {
 
     final parts = leave.used.split(' ')[0].split('/');
     final used = double.tryParse(parts[0]) ?? 0;
-    final total = parts[1] == '∞' ? double.infinity : double.tryParse(parts[1]) ?? 1;
+    final total =
+        parts[1] == '∞' ? double.infinity : double.tryParse(parts[1]) ?? 1;
     double progress = total.isFinite ? used / total : 0;
 
     Color progressColor;
@@ -237,14 +194,14 @@ class LeaveBalanceModel {
   final String used;
   final List<dynamic> dates;
 
-  LeaveBalanceModel({required this.name, required this.used, required this.dates});
+  LeaveBalanceModel(
+      {required this.name, required this.used, required this.dates});
 
   factory LeaveBalanceModel.fromJson(Map<String, dynamic> json) {
     return LeaveBalanceModel(
       name: json['name'],
       used: json['used'],
       dates: json['dates'] ?? [],
-      
     );
   }
 }

@@ -93,18 +93,12 @@ class _AttendancestatsState extends State<Attendancestats> {
   }
 
   void _navigateToDetailScreen() async {
-  // Add debug print to confirm the method is called
   print("Navigation initiated"); 
   
   try {
-    // Get the NavigatorState from the root context
     NavigatorState? navigator = Navigator.of(context);
-    if (navigator == null) {
-      print("Navigator is null - context issue");
-      return;
-    }
 
-    // Show loading screen immediately
+
     navigator.push(
       MaterialPageRoute(
         builder: (_) => Scaffold(
@@ -113,12 +107,11 @@ class _AttendancestatsState extends State<Attendancestats> {
       ),
     );
 
-    // Fetch data
     print("Fetching employee details...");
     final employeeData = await _fetchEmployeeData();
     print("Employee details fetched");
 
-    // Replace loading screen with actual content
+
     navigator.pushReplacement(
       MaterialPageRoute(
         builder: (_) => AttendanceDetailScreen(
@@ -133,7 +126,7 @@ class _AttendancestatsState extends State<Attendancestats> {
     );
   } catch (e) {
     print("Navigation error: $e");
-    Navigator.of(context).pop(); // Remove loading screen if still present
+    Navigator.of(context).pop(); 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text("Failed to navigate: ${e.toString()}")),
     );

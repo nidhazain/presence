@@ -8,6 +8,7 @@ import 'package:presence/src/constants/colors.dart';
 import 'package:presence/src/features/api/employee/dashboardapi.dart';
 import 'package:presence/src/features/api/employee/profileapi.dart';
 import 'package:presence/src/features/api/employee/shiftapi.dart';
+import 'package:presence/src/models/empdashboard.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -20,7 +21,6 @@ class HomePageState extends State<HomePage> {
   late Future<DashboardData> dashboardData;
   Map<String, dynamic>? _profileData;
 
-  // New shift-related variables
   String shiftTitle = 'Loading Shift...';
   String shiftSubtitle = '';
   List<String> shiftColleagues = [];
@@ -63,7 +63,7 @@ class HomePageState extends State<HomePage> {
     }
   }
 
-  // Fetch today's shift data
+
  Future<void> _fetchShiftData() async {
   try {
     final List<dynamic> data = await ShiftService.fetchShiftData();
@@ -78,11 +78,10 @@ class HomePageState extends State<HomePage> {
 
         if (parsedDate != null) {
           shiftSubtitle = DateFormat('MMM d, yyyy').format(parsedDate);
+          print(shiftSubtitle);
         } else if (dateStr.isEmpty) {
-          // No date from API? Show today’s date.
           shiftSubtitle = DateFormat('MMM d, yyyy').format(DateTime.now());
         } else {
-          // If backend sends junk, fallback to showing whatever was there
           shiftSubtitle = dateStr;
         }
       });
@@ -99,8 +98,6 @@ class HomePageState extends State<HomePage> {
 
 
 
-
-  // Fetch colleagues assigned to the same shift
 Future<void> _fetchShiftColleagues() async {
   try {
     final colleagues = await ShiftService.fetchShiftColleagues();
@@ -284,7 +281,6 @@ Future<void> _fetchShiftColleagues() async {
                       ),
                     ),
                     SizedBox(height: size.height * 0.03),
-                    // Shift card using fetched shift data
                     GestureDetector(
                       onTap: _showColleaguesPopup,
                       child: CustomCard12(
@@ -367,38 +363,4 @@ Future<void> _fetchShiftColleagues() async {
   }
 }
 
-class DashboardData {
-  final String checkIn;
-  final String checkOut;
-  final bool late;
-  final String overtimeToday;
-  final String totalOvertime;
-  final double attendancePercentage;
-  final String date;
-  final List<Map<String, dynamic>> attendanceGraphData;
 
-  DashboardData({
-    required this.checkIn,
-    required this.checkOut,
-    required this.late,
-    required this.overtimeToday,
-    required this.totalOvertime,
-    required this.attendancePercentage,
-    required this.date,
-    required this.attendanceGraphData,
-  });
-
-  factory DashboardData.fromJson(Map<String, dynamic> json) {
-    return DashboardData(
-      checkIn: json['check_in'],
-      checkOut: json['check_out'],
-      late: json['late'],
-      overtimeToday: json['overtime_today'],
-      totalOvertime: json['total_overtime'],
-      attendancePercentage: (json['attendance_percentage'] as num).toDouble(),
-      date: json['date'],
-      attendanceGraphData:
-          List<Map<String, dynamic>>.from(json['attendance_graph_data']),
-    );
-  }
-}

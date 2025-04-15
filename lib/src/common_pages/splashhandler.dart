@@ -21,7 +21,7 @@ class _SplashScreenHandlerState extends State<SplashScreenHandler> {
   }
 
   Future<void> _navigate() async {
-    await Future.delayed(const Duration(seconds: 3)); // Add a small delay for splash effect
+    await Future.delayed(const Duration(seconds: 3)); 
     final storage = FlutterSecureStorage();
     String? role = await storage.read(key: 'role');
     print("Role detected: $role");

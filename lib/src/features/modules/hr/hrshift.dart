@@ -5,7 +5,6 @@ import 'package:presence/src/features/api/url.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:presence/src/features/api/api.dart'; // Import your API service
 
 class Hrshift extends StatefulWidget {
   const Hrshift({super.key});
@@ -21,11 +20,7 @@ class _HrshiftState extends State<Hrshift> {
   bool _isLoading = false;
   bool _isLoadingHolidays = false;
   String _errorMessage = '';
-  
-  // Store fetched shift data
   Map<DateTime, Map<String, String>> shiftRoster = {};
-  
-  // Store fetched holiday data
   Map<DateTime, String> holidays = {};
 
   @override
@@ -33,15 +28,14 @@ class _HrshiftState extends State<Hrshift> {
     super.initState();
     _selectedDay = DateTime.now();
     _fetchShiftsForDate(_selectedDay!);
-    _fetchHolidays(); // Fetch holidays when the screen loads
+    _fetchHolidays(); 
   }
 
-  /// Normalizes date by removing time portion for comparison
   DateTime _normalizeDate(DateTime date) {
     return DateTime(date.year, date.month, date.day);
   }
 
-  /// Fetches public holidays from the API
+
   Future<void> _fetchHolidays() async {
     setState(() {
       _isLoadingHolidays = true;
@@ -67,7 +61,7 @@ class _HrshiftState extends State<Hrshift> {
     }
   }
 
-  /// Fetches shifts for a specific date from the API
+
   Future<void> _fetchShiftsForDate(DateTime date) async {
     setState(() {
       _isLoading = true;

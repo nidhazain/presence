@@ -28,7 +28,7 @@ class _ShiftCalendarScreenState extends State<ShiftCalendarScreen> {
   bool _isLoadingHolidays = false;
   String? _holidaysError;
   Map<DateTime, String> holidays = {};
-  Map<String, Color> _shiftColors = {}; // To store color mapping from backend
+  Map<String, Color> _shiftColors = {}; 
 
   @override
   void initState() {
@@ -116,7 +116,6 @@ Future<void> _fetchShiftsForRange(DateTime start, DateTime end) async {
             final shifts = dayData['shifts'] as Map<String, dynamic>?;
             
             if (shifts != null && shifts.isNotEmpty) {
-              // Get the first shift in the shifts map
               final firstShift = shifts.values.first;
               if (firstShift['shift_type'] != null) {
                 _shiftDataMap[_normalizeDate(date)] = firstShift['shift_type'];
@@ -130,7 +129,7 @@ Future<void> _fetchShiftsForRange(DateTime start, DateTime end) async {
     }
   } catch (error) {
     print('Error fetching shift range: $error');
-   // print('Response body: ${response?.body}'); // Add this to see the actual response
+   // print('Response body: ${response?.body}'); 
   }
 }
 

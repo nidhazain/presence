@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:presence/src/common_widget/custom_card.dart';
 import 'package:presence/src/common_widget/text_tile.dart';
 import 'package:presence/src/features/api/employee/policyapi.dart';
+import 'package:presence/src/models/policy.dart';
 
 class PolicyPage extends StatefulWidget {
   const PolicyPage({super.key});
@@ -166,22 +167,3 @@ class _PolicyPageState extends State<PolicyPage> {
   }
 }
 
-class PolicyResponse {
-  final List<dynamic> leavePolicies;
-  final List<dynamic> publicHolidays;
-  final List<dynamic> workingHours;
-
-  PolicyResponse({
-    required this.leavePolicies,
-    required this.publicHolidays,
-    required this.workingHours,
-  });
-
-  factory PolicyResponse.fromJson(Map<String, dynamic> json) {
-    return PolicyResponse(
-      leavePolicies: json['leave_policies'] ?? [],
-      publicHolidays: json['public_holidays'] ?? [],
-      workingHours: json['working_hours'] ?? [],
-    );
-  }
-}

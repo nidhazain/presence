@@ -23,7 +23,7 @@ class _BalancePageState extends State<BalancePage> {
       final parsedDate = DateTime.parse(dateStr);
       return DateFormat('dd MMM yyyy').format(parsedDate);
     } catch (e) {
-      return dateStr; // fallback in case it's not in valid ISO format
+      return dateStr; 
     }
   }
 

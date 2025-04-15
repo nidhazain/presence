@@ -71,7 +71,6 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
     }
   }
 
-  // Helper to format time strings from HH:mm:ss to HH:mm
   String formatTime(String time) {
     try {
       DateTime dt = DateFormat("HH:mm:ss").parse(time);
@@ -122,7 +121,6 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
                 GestureDetector(
                   onTap: () {
                     print("Image URL: ${attendance.image}");
-                    // Show full image in another dialog
                     showDialog(
                       context: context,
                       builder: (context) => Dialog(
@@ -250,7 +248,6 @@ Widget build(BuildContext context) {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Add date display here
                       Text(
                         DateFormat('dd MMM yyyy').format(attendance.dateTime),
                         style: TextStyle(

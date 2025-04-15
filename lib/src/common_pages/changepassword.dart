@@ -73,7 +73,7 @@ void _changePassword() async {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: CustomTitleText7(
-                    text: 'Your password must be at least 6 characters and should include a combination of numbers,a capital letter, and special characters (!\$@%)',
+                    text: 'Your password must be at least 6 characters and should include a combination of numbers, a capital letter, and special characters (!\$@%)',
                   ),
                 ),
                 SizedBox(height: 20),

@@ -15,16 +15,12 @@ class HrLeaveHistory extends StatefulWidget {
 }
 
 class _HrLeaveHistoryState extends State<HrLeaveHistory> {
-  // Helper method to format date
   String _formatDate(String originalDate) {
     try {
-      // Parse the original date string
       DateTime parsedDate = DateTime.parse(originalDate);
       
-      // Format the date in dd MMM yyyy format
       return DateFormat('dd MMM yyyy').format(parsedDate);
     } catch (e) {
-      // If parsing fails, return the original date
       return originalDate;
     }
   }
@@ -202,7 +198,6 @@ void _showLeaveDetailsDialog(BuildContext context, Map<String, dynamic> leave) {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          // Left side: Employee Name and Leave Type
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -218,7 +213,6 @@ void _showLeaveDetailsDialog(BuildContext context, Map<String, dynamic> leave) {
                             ),
                           ),
                           
-                          // Right side: Formatted Date
                           CustomTitleText20(
                             text: '${_formatDate(leave['start_date'])} - ${_formatDate(leave['end_date'])}'
                           ),

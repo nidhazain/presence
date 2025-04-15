@@ -111,7 +111,6 @@ class _LeaveCancellationRequestListState extends State<LeaveCancellationRequestL
       );
 
       if (response.statusCode == 200) {
-        // Refresh the list after successful decision
         await _fetchPendingCancellationRequests();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(json.decode(response.body)['message']),

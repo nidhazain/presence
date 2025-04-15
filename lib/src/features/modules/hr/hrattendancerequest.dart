@@ -90,7 +90,7 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
               'Content-Type': 'application/json',
             },
             body: json.encode({
-              "id": request.id, // Use the request's ID here
+              "id": request.id, 
               'action': action,
               //'reject_reason': reason ?? '',
             }),
@@ -229,7 +229,7 @@ class AttendanceRequest {
   final String? checkIn;
   final String? checkOut;
   final String? image;
-  final String? location; // New location field
+  final String? location; 
 
   AttendanceRequest({
     required this.id,
@@ -240,7 +240,7 @@ class AttendanceRequest {
     this.checkIn,
     this.checkOut,
     this.image,
-    this.location, // Added location parameter
+    this.location,
   });
 
   factory AttendanceRequest.fromJson(Map<String, dynamic> json) {
@@ -253,7 +253,7 @@ class AttendanceRequest {
       checkIn: json['check_in']?.toString(),
       checkOut: json['check_out']?.toString(),
       image: json['image']?.toString(),
-      location: json['location']?.toString(), // Parse location from JSON
+      location: json['location']?.toString(), 
     );
   }
 }

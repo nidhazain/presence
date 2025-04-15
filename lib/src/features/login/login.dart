@@ -7,7 +7,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:presence/auth/auth_bloc.dart';
 import 'package:presence/src/common_widget/text_tile.dart';
 import 'package:presence/src/constants/colors.dart';
-import 'package:presence/src/features/login/forgotpassword.dart';
+//import 'package:presence/src/features/login/forgotpassword.dart';
 import 'package:presence/src/features/modules/employee/attendance.dart';
 import 'package:presence/src/features/modules/employee/mainscreen.dart';
 import 'package:presence/src/features/modules/hr/hrmainscreen.dart';
@@ -71,7 +71,7 @@ class LoginScreenState extends State<LoginScreen> {
 
       double latitude = position.latitude;
       double longitude = position.longitude;
-      print('User location: $latitude, $longitude');
+      //print('User location: $latitude, $longitude');
 
       // Convert coordinates to address
       List<Placemark> placemarks = await placemarkFromCoordinates(latitude, longitude);
@@ -80,7 +80,7 @@ class LoginScreenState extends State<LoginScreen> {
         Placemark place = placemarks.first;
         String address = "${place.street}, ${place.locality}, ${place.administrativeArea}, ${place.country}";
 
-        print('User address: $address');
+        //print('User address: $address');
 
         // Store address in secure storage
         await _storage.write(key: 'address', value: address);
@@ -200,7 +200,6 @@ class LoginScreenState extends State<LoginScreen> {
                             // ),
                             SizedBox(height: screenHeight * 0.01),
 
-                            // Bloc Consumer for handling login process
                             BlocConsumer<AuthBloc, AuthState>(
                               listener: (context, state) {
                                 if (state is Authenticated) {

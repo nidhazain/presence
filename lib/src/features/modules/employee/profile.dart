@@ -81,7 +81,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) => ProfileBloc()
-        ..add(FetchProfileData()), // Fetching profile data initially
+        ..add(FetchProfileData()), 
       child: Scaffold(
         backgroundColor: Colors.white,
         body: Padding(
@@ -176,7 +176,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ],
                   );
                 }
-                return SizedBox(); // Return empty widget if state is not matched
+                return SizedBox();
               },
             ),
           ),

@@ -83,7 +83,6 @@ class _EmployeeOvertimeDetailPageState
       isLoadingMore = true;
     });
 
-    // Simulate network delay (remove in production)
     Future.delayed(const Duration(milliseconds: 500), () {
       final nextPageStart = currentPage * itemsPerPage;
       final nextPageEnd = nextPageStart + itemsPerPage;

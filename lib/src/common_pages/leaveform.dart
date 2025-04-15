@@ -366,7 +366,6 @@ class _LeaveFormState extends State<LeaveForm> {
         if (controller == _endDateController &&
             _startDateController.text.isNotEmpty) {
           try {
-            // Parse using display format for validation
             DateTime startDate =
                 _displayDateFormat.parse(_startDateController.text);
             DateTime endDate = _displayDateFormat.parse(value!);
@@ -388,7 +387,6 @@ class _LeaveFormState extends State<LeaveForm> {
         );
         if (pickedDate != null && mounted) {
           setState(() {
-            // Store in display format
             controller.text = _displayDateFormat.format(pickedDate);
           });
           _updateLeaveDays();

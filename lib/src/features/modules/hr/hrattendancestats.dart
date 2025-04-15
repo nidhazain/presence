@@ -82,14 +82,14 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     });
 
     try {
-      // Calculate date range for the selected month/year
+
       final firstDay = DateTime(selectedYear, selectedMonth, 1);
       final lastDay = DateTime(selectedYear, selectedMonth + 1, 0);
       
       final startDate = DateFormat('yyyy-MM-dd').format(firstDay);
       final endDate = DateFormat('yyyy-MM-dd').format(lastDay);
 
-      // Replace with your actual API endpoint
+    
       final url = Uri.parse('$BASE_URL/attendancedashboard/?start_date=$startDate&end_date=$endDate');
       await TokenService.ensureAccessToken();
       String? token = await TokenService.getAccessToken();
@@ -97,7 +97,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
         url,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token', // Add auth if needed
+          'Authorization': 'Bearer $token', 
         },
       );
 

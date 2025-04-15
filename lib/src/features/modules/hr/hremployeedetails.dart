@@ -88,22 +88,22 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
       final dayPart = parts[0].trim(); 
       final timePart = parts[1].trim(); 
 
-      final days = double.parse(dayPart.split(" ")[0]); // -1
+      final days = double.parse(dayPart.split(" ")[0]); 
       final timeComponents = timePart.split(":");
-      final hours = double.parse(timeComponents[0]); // 15
-      final minutes = double.parse(timeComponents[1]); // 00
+      final hours = double.parse(timeComponents[0]); 
+      final minutes = double.parse(timeComponents[1]); 
 
       return (days * 24) + hours + (minutes / 60);
     } else {
       // Handle cases like "9:00:00"
       final components = totalHours.split(":");
-      final hours = double.parse(components[0]); // 9
-      final minutes = double.parse(components[1]); // 00
+      final hours = double.parse(components[0]); 
+      final minutes = double.parse(components[1]); 
 
       return hours + (minutes / 60);
     }
   } catch (e) {
-    return 0.0; // Fallback if parsing fails
+    return 0.0; 
   }
 }
 
@@ -240,10 +240,8 @@ Widget _buildAttendanceDetail(
   bool present,
   double totalHours, 
 ) {
-  // Get a color based on the status
   Color statusColor = present ? Colors.green : Colors.red;
   
-  // Format the date string if needed
   String formattedDate = date;
   try {
     final parsedDate = DateTime.parse(date);
@@ -259,8 +257,8 @@ Widget _buildAttendanceDetail(
       borderRadius: BorderRadius.circular(10),
        border: Border(
       left: BorderSide(
-        color: red, // Change to any color you want
-        width: 5, // Adjust thickness if needed
+        color: red,
+        width: 5, 
       ),
     ),
       // boxShadow: [
@@ -274,7 +272,7 @@ Widget _buildAttendanceDetail(
     ),
     child: Row(
       children: [
-        // Left colored border as a separate container
+
         Container(
           width: 5,
           decoration: BoxDecoration(
@@ -285,7 +283,7 @@ Widget _buildAttendanceDetail(
             ),
           ),
         ),
-        // Main content
+
         Expanded(
           child: Padding(
             padding: const EdgeInsets.all(10),
@@ -295,12 +293,12 @@ Widget _buildAttendanceDetail(
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Date on left side (larger)
+   
                     CustomTitleText10(text: formattedDate),
                     
                     const Spacer(),
                     
-                    // Status chip
+
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
@@ -321,16 +319,14 @@ Widget _buildAttendanceDetail(
                 
                 const SizedBox(height: 8),
                 
-                // Divider for visual separation
+
                 Divider(color: primary.withOpacity(.3)),
                 
                 //const SizedBox(height: 4),
-                
-                // Time details in smaller text
+
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Check-in time
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -344,8 +340,6 @@ Widget _buildAttendanceDetail(
                         CustomTitleText20(text: checkIn),
                       ],
                     ),
-                    
-                    // Check-out time
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [

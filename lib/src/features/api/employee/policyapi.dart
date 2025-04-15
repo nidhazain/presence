@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:presence/src/features/api/api.dart';
 import 'package:presence/src/features/api/url.dart';
 import 'package:http/http.dart' as http;
-import 'package:presence/src/features/modules/employee/policy.dart';
+import 'package:presence/src/models/policy.dart';
 
 class PolicyService {
 

@@ -128,7 +128,6 @@ class MainScreenState extends State<MainScreen> {
       ? NetworkImage(_profileData!['image'])
       : AssetImage('images/pro.jpg') as ImageProvider,
   onBackgroundImageError: (_, __) {
-    print("⚠️ Failed to load profile image, falling back to default.");
   },
 ),
 

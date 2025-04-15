@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:presence/src/constants/colors.dart';
 import 'package:presence/src/features/modules/hr/hrcancellation.dart';
 import 'package:presence/src/features/modules/hr/hrleaverequest.dart';
-import 'package:presence/src/features/modules/hr/hrleavehistory.dart'; // Import the new history page
+import 'package:presence/src/features/modules/hr/hrleavehistory.dart';
 
 class Hrleavepage extends StatefulWidget {
   const Hrleavepage({super.key});
@@ -14,14 +14,13 @@ class Hrleavepage extends StatefulWidget {
 class HrleavepageState extends State<Hrleavepage> {
   int _selectedIndex = 0;
   
-  // Updated tabs list to include 'history'
   final List<String> tabs = ["leave", "cancellation", "history"];
 
-  // Updated content list to include LeaveHistoryPage
+
   final List<Widget> content = [
     LeaveRequestPage(), 
     LeaveCancellationRequestList(), 
-    HrLeaveHistory() // New page for leave history
+    HrLeaveHistory() 
   ];
 
   @override

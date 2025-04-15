@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 // import 'package:presence/src/common_widget/custom_card.dart';
 // import 'package:presence/src/common_widget/text_tile.dart';
 import 'package:presence/src/features/api/employee/overtimeapi.dart';
+import 'package:presence/src/models/overtime.dart';
+
 
 import '../constants/colors.dart';
 
@@ -203,7 +205,6 @@ class _OvertimeHistoryPageState extends State<OvertimeHistoryPage> with SingleTi
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () {
-          // Show details dialog or navigate to detail page
         },
         child: Padding(
           padding: EdgeInsets.all(16),
@@ -282,25 +283,3 @@ class _OvertimeHistoryPageState extends State<OvertimeHistoryPage> with SingleTi
   }
 }
 
-class OvertimeEntry {
-  final DateTime date;
-  final int hours;
-  final String? reason;  // Made nullable
-  final String? status;  // Made nullable and stored as property
-
-  OvertimeEntry({
-    required this.date, 
-    required this.hours, 
-    this.status,  // Optional parameter
-    this.reason,  // Optional parameter
-  });
-
-  factory OvertimeEntry.fromJson(Map<String, dynamic> json) {
-    return OvertimeEntry(
-      date: DateTime.parse(json['date']),
-      hours: json['hours'] ?? 0,  // Provide default if null
-      reason: json['reason'] as String?,  // Cast as nullable String
-      status: json['status'] as String?,  // Cast as nullable String
-    );
-  }
-}

@@ -17,7 +17,6 @@ class AttendanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Format overtime from "HH:MM:SS" to "X hrs" or "-" if zero
     final overtime = _formatOvertime(employee.totalOvertime);
     
     return Card(
@@ -38,7 +37,6 @@ class AttendanceCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  // Display image if available, otherwise use initial avatar
                   employee.imageUrl != null
                       ? CircleAvatar(
                           radius: 20,
@@ -61,7 +59,7 @@ class AttendanceCard extends StatelessWidget {
                       children: [
                         CustomTitleText10(text: employee.name),
                         Text(
-                          'ID: ${employee.empNum}', // Use actual employee number from API
+                          'ID: ${employee.empNum}', 
                           style: TextStyle(
                             color: Colors.grey[600],
                             fontSize: 13,

@@ -173,7 +173,7 @@ class HRMainScreenState extends State<HRMainScreen> {
                   });
                 },
               )
-            : null, // Hide bottom navigation for non-indexed screens
+            : null, 
       ),
     );
   }

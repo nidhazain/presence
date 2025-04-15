@@ -46,7 +46,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Animated logo with slight pulsing effect
             ScaleTransition(
               scale: _scaleAnimation,
               child: Image.asset(
@@ -56,8 +55,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
               ),
             ),
             const SizedBox(height: 30),
-            
-            // Styled loading text with animation
             TweenAnimationBuilder<double>(
               duration: const Duration(seconds: 1),
               tween: Tween(begin: 0, end: 1),
@@ -78,8 +75,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
             ),
 
             const SizedBox(height: 40),
-            
-            // Loading indicator
             const CircularProgressIndicator(
               valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
             ),

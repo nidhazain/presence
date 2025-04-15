@@ -42,8 +42,8 @@ class _NotificationPageState extends State<NotificationPage> {
   bool _isLoading = true;
   String? _errorMessage;
   
-  // Pagination parameters
-  final int _itemsPerPage = 5; // Load 5 items initially
+
+  final int _itemsPerPage = 5; 
   int _currentPage = 1;
   bool _hasMorePages = true;
   bool _isLoadingMore = false;
@@ -75,9 +75,8 @@ class _NotificationPageState extends State<NotificationPage> {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         
-        // Check if the response is paginated
+
         if (data is Map<String, dynamic> && data.containsKey('results')) {
-          // Handle paginated response
           final List<dynamic> results = data['results'];
           final bool hasNext = data['next'] != null;
           
@@ -89,10 +88,8 @@ class _NotificationPageState extends State<NotificationPage> {
             _isLoading = false;
           });
         } else {
-          // Handle non-paginated response (for backward compatibility)
           final List<dynamic> notifications = data is List ? data : [];
           
-          // If not paginated, just take the first 5 items
           final limitedNotifications = notifications.take(_itemsPerPage).toList();
           
           setState(() {
@@ -162,7 +159,6 @@ class _NotificationPageState extends State<NotificationPage> {
             });
           }
         } else {
-          // Handle non-paginated response
           final List<dynamic> allNotifications = data is List ? data : [];
           final int startIndex = _currentPage * _itemsPerPage;
           
@@ -413,10 +409,9 @@ class _NotificationPageState extends State<NotificationPage> {
                             _buildNotificationList('This Week', thisWeekNotifications),
                             _buildNotificationList('Older', olderNotifications),
                             
-                            // Load more button
+                            
                             _buildLoadMoreButton(),
                             
-                            // Space at the bottom to allow pull to refresh when list is short
                             if (_allNotifications.isEmpty)
                               const SizedBox(height: 100),
                           ],

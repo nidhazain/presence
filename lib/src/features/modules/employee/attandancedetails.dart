@@ -41,24 +41,50 @@ class _AttendanceDetailScreenState extends State<AttendanceDetailScreen> {
   bool isLoadingMore = false;
   String errorMessage = '';
   
-  // Pagination variables
   int currentPage = 1;
-  int itemsPerPage = 10;
+  final int itemsPerPage = 10;
   bool hasMoreData = true;
   int totalRecords = 0;
+  
+
+  final ScrollController _scrollController = ScrollController();
+  bool _isScrolling = false;
 
   @override
   void initState() {
     super.initState();
     _fetchAttendanceDetails();
+    _scrollController.addListener(_scrollListener);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_scrollListener);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollListener() {
+    if (_scrollController.position.pixels >= 
+        _scrollController.position.maxScrollExtent - 200 &&
+        !isLoadingMore && 
+        hasMoreData &&
+        !_isScrolling) {
+      setState(() => _isScrolling = true);
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (_scrollController.position.pixels >= 
+            _scrollController.position.maxScrollExtent - 200) {
+          _fetchAttendanceDetails(loadMore: true);
+        }
+        setState(() => _isScrolling = false);
+      });
+    }
   }
 
   Future<void> _fetchAttendanceDetails({bool loadMore = false}) async {
     if (loadMore) {
       if (!hasMoreData || isLoadingMore) return;
-      setState(() {
-        isLoadingMore = true;
-      });
+      setState(() => isLoadingMore = true);
       currentPage++;
     } else {
       setState(() {
@@ -87,8 +113,6 @@ class _AttendanceDetailScreenState extends State<AttendanceDetailScreen> {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final newRecords = List<Map<String, dynamic>>.from(data['attendance_records'] ?? []);
-        
-        // Get total records count from API if available
         final totalFromApi = data['total_records'] ?? data['meta']?['total'] ?? 0;
         
         setState(() {
@@ -99,34 +123,84 @@ class _AttendanceDetailScreenState extends State<AttendanceDetailScreen> {
           }
           
           attendanceRecords.addAll(newRecords);
-          
-          // More accurate way to check if we've reached the end
+          hasMoreData = newRecords.length == itemsPerPage;
           if (totalRecords > 0) {
-            // If we have total records info from API
             hasMoreData = attendanceRecords.length < totalRecords;
-          } else {
-            // Fallback: check if we got fewer items than requested
-            hasMoreData = newRecords.length >= itemsPerPage;
           }
           
           isLoading = false;
           isLoadingMore = false;
         });
       } else {
-        throw Exception('Failed to load attendance details');
+        throw Exception('Failed to load attendance details: ${response.statusCode}');
       }
     } catch (e) {
       setState(() {
+        if (loadMore) currentPage--;
         isLoading = false;
         isLoadingMore = false;
-        errorMessage = 'Error loading data. Please try again.';
+        errorMessage = 'Error loading data: ${e.toString().replaceAll('Exception: ', '')}';
       });
     }
   }
 
-  String _formatOvertime(dynamic overtime) {
-    if (overtime == 0 || overtime == null) return '-';
-    return '$overtime hr${(overtime is num && overtime > 1) ? 's' : ''}';
+  // String _formatOvertime(dynamic overtime) {
+  //   if (overtime == 0 || overtime == null) return '-';
+  //   return '$overtime hr${(overtime is num && overtime > 1) ? 's' : ''}';
+  // }
+
+  Widget _buildErrorWidget() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            errorMessage,
+            style: const TextStyle(color: Colors.red),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: _fetchAttendanceDetails,
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoadMoreWidget() {
+    if (isLoadingMore) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16.0),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: const [
+              CircularProgressIndicator(),
+              SizedBox(height: 8),
+              Text('Loading more...', style: TextStyle(color: Colors.grey)),
+            ],
+          ),
+        ),
+      );
+    } else if (errorMessage.isNotEmpty && attendanceRecords.isNotEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16.0),
+        child: _buildErrorWidget(),
+      );
+    } else if (!hasMoreData && attendanceRecords.isNotEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 16.0),
+        child: Center(
+          child: Text(
+            'No more records',
+            style: TextStyle(color: Colors.grey),
+          ),
+        ),
+      );
+    }
+    return const SizedBox();
   }
 
   @override
@@ -134,119 +208,88 @@ class _AttendanceDetailScreenState extends State<AttendanceDetailScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text('Attendance', style: TextStyle(color: Colors.white)),
+        title: const Text('Attendance', style: TextStyle(color: Colors.white)),
         backgroundColor: primary,
-        iconTheme: IconThemeData(color: Colors.white),
+        iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
       ),
       body: isLoading
-          ? Center(child: CircularProgressIndicator())
-          : errorMessage.isNotEmpty
-              ? Center(child: Text(errorMessage))
-              : NotificationListener<ScrollNotification>(
-                  onNotification: (scrollNotification) {
-                    // Load more when scrolled to bottom
-                    if (scrollNotification is ScrollEndNotification &&
-                        scrollNotification.metrics.extentAfter == 0 &&
-                        hasMoreData &&
-                        !isLoadingMore) {
-                      _fetchAttendanceDetails(loadMore: true);
-                      return true;
-                    }
-                    return false;
-                  },
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Attendance Summary',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              SizedBox(height: 12),
-                              Row(
-                                children: [
-                                  _buildSummaryCard(
-                                    'Present',
-                                    attendanceSummary['present']?.toString() ??
-                                        '0',
-                                    Colors.green,
-                                  ),
-                                  _buildSummaryCard(
-                                    'Absent',
-                                    attendanceSummary['absent']?.toString() ??
-                                        '0',
-                                    Colors.red,
-                                  ),
-                                  _buildSummaryCard(
-                                    'Late',
-                                    attendanceSummary['late']?.toString() ?? '0',
-                                    Colors.amber,
-                                  ),
-                                ],
-                              ),
-                              SizedBox(height: 24),
-                              Column(
+          ? const Center(child: CircularProgressIndicator())
+          : errorMessage.isNotEmpty && attendanceRecords.isEmpty
+              ? _buildErrorWidget()
+              : Column(
+                  children: [
+                    Expanded(
+                      child: SingleChildScrollView(
+                        controller: _scrollController,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    'Recent Attendance',
+                                  const Text(
+                                    'Attendance Summary',
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                  SizedBox(height: 12),
-                                  ListView.separated(
-                                    shrinkWrap: true,
-                                    physics: NeverScrollableScrollPhysics(),
-                                    itemCount: attendanceRecords.length + (hasMoreData ? 1 : 0),
-                                    separatorBuilder: (context, index) =>
-                                        SizedBox(height: 10),
-                                    itemBuilder: (context, index) {
-                                      if (index >= attendanceRecords.length) {
-                                        return _buildLoadMoreIndicator();
-                                      }
-                                      return _buildAttendanceItem(
-                                          attendanceRecords[index]);
-                                    },
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    children: [
+                                      _buildSummaryCard(
+                                        'Present',
+                                        attendanceSummary['present']?.toString() ?? '0',
+                                        Colors.green,
+                                      ),
+                                      _buildSummaryCard(
+                                        'Absent',
+                                        attendanceSummary['absent']?.toString() ?? '0',
+                                        Colors.red,
+                                      ),
+                                      _buildSummaryCard(
+                                        'Late',
+                                        attendanceSummary['late']?.toString() ?? '0',
+                                        Colors.amber,
+                                      ),
+                                    ],
                                   ),
+                                  const SizedBox(height: 24),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'Recent Attendance',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      ListView.separated(
+                                        shrinkWrap: true,
+                                        physics: const NeverScrollableScrollPhysics(),
+                                        itemCount: attendanceRecords.length,
+                                        separatorBuilder: (context, index) => const SizedBox(height: 10),
+                                        itemBuilder: (context, index) {
+                                          return _buildAttendanceItem(attendanceRecords[index]);
+                                        },
+                                      ),
+                                    ],
+                                  )
                                 ],
-                              )
-                            ],
-                          ),
+                              ),
+                            ),
+                            _buildLoadMoreWidget(),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-    );
-  }
-
-  Widget _buildLoadMoreIndicator() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Center(
-        child: isLoadingMore
-            ? CircularProgressIndicator()
-            : hasMoreData
-                ? ElevatedButton(
-                    onPressed: () => _fetchAttendanceDetails(loadMore: true),
-                    child: Text('Load More'),
-                  )
-                : Text(
-                    'No more records to load',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-      ),
     );
   }
 
@@ -259,7 +302,7 @@ class _AttendanceDetailScreenState extends State<AttendanceDetailScreen> {
           borderRadius: BorderRadius.circular(12),
         ),
         child: Container(
-          padding: EdgeInsets.symmetric(vertical: 16),
+          padding: const EdgeInsets.symmetric(vertical: 16),
           child: Column(
             children: [
               Text(
@@ -270,7 +313,7 @@ class _AttendanceDetailScreenState extends State<AttendanceDetailScreen> {
                   color: color,
                 ),
               ),
-              SizedBox(height: 4),
+              const SizedBox(height: 4),
               Text(
                 title,
                 style: TextStyle(
@@ -286,16 +329,18 @@ class _AttendanceDetailScreenState extends State<AttendanceDetailScreen> {
   }
 
   Widget _buildAttendanceItem(Map<String, dynamic> record) {
-    final bool isPresent =
-        record['status'] == 'Present' || record['status'] == 'Late';
-    final Color statusColor = isPresent ? Colors.green : Colors.red;
+    final Color statusColor = record['status'] == 'Present' 
+        ? Colors.green 
+        : record['status'] == 'Late' 
+            ? Colors.amber 
+            : Colors.red;
 
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
         border: Border(
           left: BorderSide(
-            color: Colors.red,
+            color: statusColor,
             width: 3,
           ),
         ),
@@ -309,16 +354,16 @@ class _AttendanceDetailScreenState extends State<AttendanceDetailScreen> {
             borderRadius: BorderRadius.circular(10),
           ),
           child: ListTile(
-            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             title: Row(
               children: [
                 Text(
                   record['date'] ?? 'No date',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
-                Spacer(),
+                const Spacer(),
                 Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: statusColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(16),
@@ -337,7 +382,7 @@ class _AttendanceDetailScreenState extends State<AttendanceDetailScreen> {
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -345,7 +390,7 @@ class _AttendanceDetailScreenState extends State<AttendanceDetailScreen> {
                     Text('Check-Out: ${record['check_out'] ?? '-'}'),
                   ],
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
               ],
             ),
           ),

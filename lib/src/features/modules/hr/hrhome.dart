@@ -316,8 +316,6 @@ class HrhomeState extends State<Hrhome> {
                   children: [
                     _buildGreetingSection(),
                     _buildStatusCards(size),
-
-                    // Today's Attendance Summary
                     GestureDetector(
                       onTap: _showAttendanceDetails,
                       child: Padding(
@@ -331,7 +329,6 @@ class HrhomeState extends State<Hrhome> {
                       ),
                     ),
 
-                    // Add the color indicators here
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
                       child: Row(
@@ -346,7 +343,6 @@ class HrhomeState extends State<Hrhome> {
 
                     SizedBox(height: 20),
 
-                    // Weekly Attendance Chart
                     Padding(
                       padding: const EdgeInsets.all(10),
                       child: Align(
@@ -467,7 +463,6 @@ GestureDetector(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header with title and close icon
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -489,7 +484,6 @@ GestureDetector(
             ),
             SizedBox(height: 20),
             
-            // Content
             Flexible(
               child: Container(
                 width: double.maxFinite,
@@ -512,7 +506,6 @@ GestureDetector(
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Shift heading
                             Padding(
                               padding: EdgeInsets.only(top: index > 0 ? 16 : 0, bottom: 8),
                               child: Text(
@@ -524,7 +517,6 @@ GestureDetector(
                               ),
                             ),
                             
-                            // Employee list or empty message
                             employees.isEmpty
                               ? Padding(
                                   padding: EdgeInsets.only(left: 8, bottom: 8),
@@ -633,7 +625,6 @@ GestureDetector(
   }
 
   Widget _buildStatusCards(Size size) {
-    // Removed 'const' keyword so that withOpacity works as expected.
     final List<Color> indicatorColors = [
       Color.fromARGB(255, 171, 217, 255).withOpacity(0.3),
       Color.fromARGB(255, 217, 182, 250).withOpacity(0.3),
